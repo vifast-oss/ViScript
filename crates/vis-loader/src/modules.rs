@@ -42,68 +42,70 @@ struct MucTepPhu {
     text: String,
 }
 
-thread_local! {
-    static CACHE_PHU: RefCell<HashMap<std::path::PathBuf, MucTepPhu>> = RefCell::new(HashMap::new());
+/// **ST-317c (#81/#66)** — trạng thái nạp **tiêm được**: overlay buffer tệp phụ + cache nội dung.
+///
+/// `Default` = rỗng (không overlay, cache rỗng). CLI dùng trạng thái mặc định trong `thread_local!`
+/// (một phiên/process, giữ nguyên chữ ký `load_full*` cũ); LSP giữ **một** `LoadState` trong
+/// `AnalysisHost` nên hai phiên/test chạy song song không rò trạng thái của nhau.
+#[derive(Default)]
+pub struct LoadState {
+    cache_phu: HashMap<std::path::PathBuf, MucTepPhu>,
     /// **VS3-7 (VD-271)**: buffer LSP đang mở theo đường dẫn **canonical** — dùng làm nội dung tệp
     /// phụ khi phân tích module của tài liệu khác (kể cả chưa ghi đĩa). CLI không bật overlay.
-    static PHU_MO: RefCell<HashMap<std::path::PathBuf, String>> = RefCell::new(HashMap::new());
+    phu_mo: HashMap<std::path::PathBuf, String>,
 }
 
-/// **VS3-7**: `didOpen`/`didChange` của LSP — đăng ký nội dung buffer cho một tệp (canonical hoá
-/// đường dẫn). Lần đọc tệp phụ sau đó dùng buffer thay cho đĩa; `didClose` gọi
-/// [`xoa_noi_dung_mo`] để quay lại đĩa.
-pub fn dat_noi_dung_mo(path: &Path, text: &str) {
-    let p = chuan_hoa(path);
-    PHU_MO.with(|c| {
-        c.borrow_mut().insert(p, text.to_string());
-    });
+thread_local! {
+    /// Trạng thái mặc định cho CLI/API cũ (`load_full*` không đổi chữ ký).
+    static TRANG_THAI: RefCell<LoadState> = RefCell::new(LoadState::default());
 }
 
-/// **VS3-7**: bỏ overlay buffer của một tệp (LSP `didClose`).
-pub fn xoa_noi_dung_mo(path: &Path) {
-    let p = chuan_hoa(path);
-    PHU_MO.with(|c| {
-        let mut m = c.borrow_mut();
+impl LoadState {
+    /// **VS3-7**: `didOpen`/`didChange` của LSP — đăng ký nội dung buffer cho một tệp (canonical
+    /// hoá đường dẫn). Lần đọc tệp phụ sau đó dùng buffer thay cho đĩa.
+    pub fn dat_noi_dung_mo(&mut self, path: &Path, text: &str) {
+        let p = chuan_hoa(path);
+        self.phu_mo.insert(p, text.to_string());
+    }
+
+    /// **VS3-7**: bỏ overlay buffer của một tệp (LSP `didClose`).
+    pub fn xoa_noi_dung_mo(&mut self, path: &Path) {
+        let p = chuan_hoa(path);
         // Xoá cả khoá thô (tệp mới chưa có trên đĩa lúc `didOpen`) lẫn canonical.
-        m.remove(path);
-        m.remove(&p);
-    });
-}
+        self.phu_mo.remove(path);
+        self.phu_mo.remove(&p);
+    }
 
-/// **ST-100**: dọn cache tệp phụ (gọi khi LSP `didClose`).
-pub fn xoa_cache_phu() {
-    CACHE_PHU.with(|c| c.borrow_mut().clear());
-}
+    /// **ST-100**: dọn cache tệp phụ (LSP `didClose`/mọi thay đổi văn bản).
+    pub fn xoa_cache_phu(&mut self) {
+        self.cache_phu.clear();
+    }
 
-fn doc_cache_phu(path: &std::path::Path) -> std::io::Result<String> {
-    // **VS3-7**: buffer LSP đang mở thắng đĩa (kể cả tệp chưa tồn tại trên đĩa).
-    // **VS3-W4 (Windows)**: `dat_noi_dung_mo` ghi theo `chuan_hoa(path)` (canonical), nên tra
-    // thêm khoá canonical — nếu chỉ tra đường dẫn thô, Windows (`\\?\`, hoa/thường) trượt overlay
-    // và đọc đĩa ⇒ buffer LSP bị bỏ qua. Tra thô trước để tệp mới (chưa có trên đĩa) vẫn khớp.
-    if let Some(t) = PHU_MO.with(|c| c.borrow().get(path).cloned()) {
-        return Ok(t);
-    }
-    let khoa = chuan_hoa(path);
-    if khoa != path {
-        if let Some(t) = PHU_MO.with(|c| c.borrow().get(&khoa).cloned()) {
-            return Ok(t);
+    fn doc_tep_phu(&mut self, path: &Path) -> std::io::Result<String> {
+        // **VS3-7**: buffer LSP đang mở thắng đĩa (kể cả tệp chưa tồn tại trên đĩa).
+        // **VS3-W4 (Windows)**: `dat_noi_dung_mo` ghi theo `chuan_hoa(path)` (canonical), nên tra
+        // thêm khoá canonical — nếu chỉ tra đường dẫn thô, Windows (`\\?\`, hoa/thường) trượt
+        // overlay và đọc đĩa ⇒ buffer LSP bị bỏ qua. Tra thô trước để tệp mới (chưa có trên đĩa)
+        // vẫn khớp.
+        if let Some(t) = self.phu_mo.get(path) {
+            return Ok(t.clone());
         }
-    }
-    let meta = std::fs::metadata(path)?;
-    let mtime = meta.modified().ok();
-    let size = meta.len();
-    if let Some(m) = CACHE_PHU.with(|c| {
-        c.borrow()
-            .get(path)
-            .map(|m| (m.mtime, m.size, m.text.clone()))
-    }) {
-        if m.0 == mtime && m.1 == size {
-            return Ok(m.2);
+        let khoa = chuan_hoa(path);
+        if khoa != path {
+            if let Some(t) = self.phu_mo.get(&khoa) {
+                return Ok(t.clone());
+            }
         }
-    }
-    let text = std::fs::read_to_string(path)?;
-    CACHE_PHU.with(|c| {
-        c.borrow_mut().insert(
+        let meta = std::fs::metadata(path)?;
+        let mtime = meta.modified().ok();
+        let size = meta.len();
+        if let Some(m) = self.cache_phu.get(path) {
+            if m.mtime == mtime && m.size == size {
+                return Ok(m.text.clone());
+            }
+        }
+        let text = std::fs::read_to_string(path)?;
+        self.cache_phu.insert(
             path.to_path_buf(),
             MucTepPhu {
                 mtime,
@@ -111,8 +113,28 @@ fn doc_cache_phu(path: &std::path::Path) -> std::io::Result<String> {
                 text: text.clone(),
             },
         );
-    });
-    Ok(text)
+        Ok(text)
+    }
+}
+
+/// **VS3-7**: `didOpen`/`didChange` của LSP trên trạng thái mặc định (API cũ).
+pub fn dat_noi_dung_mo(path: &Path, text: &str) {
+    TRANG_THAI.with(|c| c.borrow_mut().dat_noi_dung_mo(path, text));
+}
+
+/// **VS3-7**: bỏ overlay buffer của một tệp trên trạng thái mặc định (API cũ).
+pub fn xoa_noi_dung_mo(path: &Path) {
+    TRANG_THAI.with(|c| c.borrow_mut().xoa_noi_dung_mo(path));
+}
+
+/// **ST-100**: dọn cache tệp phụ trên trạng thái mặc định (API cũ).
+pub fn xoa_cache_phu() {
+    TRANG_THAI.with(|c| c.borrow_mut().xoa_cache_phu());
+}
+
+#[cfg(test)]
+fn doc_cache_phu(path: &std::path::Path) -> std::io::Result<String> {
+    TRANG_THAI.with(|c| c.borrow_mut().doc_tep_phu(path))
 }
 
 /// Kết quả nạp một đơn vị biên dịch.
@@ -371,7 +393,7 @@ fn span_cua(it: &HItem) -> Span {
     }
 }
 
-struct Nap {
+struct Nap<'a> {
     mode: Mode,
     main: PathBuf,
     main_dir: PathBuf,
@@ -396,9 +418,11 @@ struct Nap {
     file_id: u16,
     /// **ST-114b**: bảng `file_id → rel` theo đúng thứ tự cấp ở [`Nap::tham`].
     file_rel: Vec<String>,
+    /// **ST-317c**: trạng thái nạp (overlay + cache) **tiêm từ ngoài** — không dùng `thread_local`.
+    trang_thai: &'a mut LoadState,
 }
 
-impl Nap {
+impl Nap<'_> {
     fn bao(&mut self, rel: &str, code: &'static vis_diag::Code, msg: String, span: Span) {
         let text = self
             .files
@@ -497,7 +521,7 @@ impl Nap {
             None => match match (&self.main_text, path == self.main) {
                 (Some(t), true) => Ok(t.clone()),
                 // **ST-100**: tệp phụ đọc qua cache (mtime+size); tệp chính luôn đọc theo buffer/đĩa.
-                _ => doc_cache_phu(&path),
+                _ => self.trang_thai.doc_tep_phu(&path),
             } {
                 Ok(t) => t,
                 Err(e) => {
@@ -796,7 +820,7 @@ pub fn load_with(main: &str, cho_ngoai: bool) -> Result<Loaded, LoadError> {
 /// Như [`load_with`] nhưng `kiem_kieu = false` ⇒ **chỉ cú pháp/hạ**, bỏ chẩn đoán `tyck`
 /// (`vis check --syntax`, dùng cho cổng "khối mã trong tài liệu **parse** được" — QD §7.4).
 pub fn load_full(main: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<Loaded, LoadError> {
-    load_full_voi(main, None, cho_ngoai, kiem_kieu, false)
+    TRANG_THAI.with(|c| load_full_voi(main, None, cho_ngoai, kiem_kieu, false, &mut c.borrow_mut()))
 }
 
 /// **ST-80 (VD-108)**: như [`load_full`] nhưng **văn bản tệp chính** lấy từ `text` (buffer LSP)
@@ -807,7 +831,29 @@ pub fn load_full_voi_text(
     cho_ngoai: bool,
     kiem_kieu: bool,
 ) -> Result<Loaded, LoadError> {
-    load_full_voi(main, Some(text), cho_ngoai, kiem_kieu, false)
+    TRANG_THAI.with(|c| {
+        load_full_voi(
+            main,
+            Some(text),
+            cho_ngoai,
+            kiem_kieu,
+            false,
+            &mut c.borrow_mut(),
+        )
+    })
+}
+
+/// **ST-317c (#81/#66)** — như [`load_full_voi_text`] nhưng dùng **trạng thái nạp tiêm được**
+/// (overlay + cache) thay cho `thread_local!` toàn cục. LSP giữ một `LoadState` trong
+/// `AnalysisHost` để hai phiên/test song song không rò trạng thái.
+pub fn load_full_voi_text_trang_thai(
+    main: &str,
+    text: &str,
+    cho_ngoai: bool,
+    kiem_kieu: bool,
+    trang_thai: &mut LoadState,
+) -> Result<Loaded, LoadError> {
+    load_full_voi(main, Some(text), cho_ngoai, kiem_kieu, false, trang_thai)
 }
 
 /// **VD-269**: `vis check --stdin` — nạp **script mode** từ bộ đệm stdin dưới tên ảo `-`
@@ -815,7 +861,16 @@ pub fn load_full_voi_text(
 /// đoán/mức không đổi; tên `-` không có đuôi ⇒ `Mode::Script`. `use ./x` tương đối giải
 /// theo **thư mục hiện hành** (như tệp chính nằm ở đó).
 pub fn load_full_stdin(text: &str, cho_ngoai: bool, kiem_kieu: bool) -> Result<Loaded, LoadError> {
-    load_full_voi("-", Some(text), cho_ngoai, kiem_kieu, true)
+    TRANG_THAI.with(|c| {
+        load_full_voi(
+            "-",
+            Some(text),
+            cho_ngoai,
+            kiem_kieu,
+            true,
+            &mut c.borrow_mut(),
+        )
+    })
 }
 
 fn load_full_voi(
@@ -824,6 +879,7 @@ fn load_full_voi(
     cho_ngoai: bool,
     kiem_kieu: bool,
     main_ao: bool,
+    trang_thai: &mut LoadState,
 ) -> Result<Loaded, LoadError> {
     let main_path = PathBuf::from(main);
     if !main_ao && !main_path.is_file() {
@@ -860,6 +916,7 @@ fn load_full_voi(
         main_text: text_chinh.map(str::to_string),
         file_id: 0,
         file_rel: Vec::new(),
+        trang_thai,
     };
     n.tham(&main_path);
     let rel_chinh = rel_cua(&main_dir, &n.main);

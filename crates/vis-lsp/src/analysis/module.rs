@@ -5,7 +5,6 @@
 //! Chỉ **item** (label/kind/detail); `span` không dùng cho completion/hover module. `detail` ghi rõ
 //! **nguồn** (`util: fn tinh(x: int) -> int`) để người dùng biết ký hiệu đến từ đâu.
 
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
@@ -17,26 +16,17 @@ use super::phan_tich::{self, GoiY, KetQua};
 
 /// **ST-100**: cache **item do module phụ sinh ra** (không cache tệp chính — tệp chính luôn phân tích
 /// lại từ buffer LSP). Khoá theo `(đường dẫn main, danh sách use địa phương)` + `(mtime,size)` từng tệp
-/// phụ; `mtime` đổi ⇒ nạp lại. `didClose` ⇒ [`xoa_cache_module`].
+/// phụ; `mtime` đổi ⇒ nạp lại. `didClose` ⇒ `AnalysisHost::dong` xoá cache.
 struct MucPhu {
     path: PathBuf,
     mtime: Option<SystemTime>,
     size: u64,
 }
 
-struct MucModule {
-    use_dp: Vec<PathBuf>,
+pub(super) struct MucModule {
+    pub(super) use_dp: Vec<PathBuf>,
     phu: Vec<MucPhu>,
-    items: Vec<GoiY>,
-}
-
-thread_local! {
-    static CACHE_MOD: RefCell<HashMap<PathBuf, MucModule>> = RefCell::new(HashMap::new());
-}
-
-/// **ST-100**: dọn cache module (gọi cùng `didClose`).
-pub(crate) fn xoa_cache_module() {
-    CACHE_MOD.with(|c| c.borrow_mut().clear());
+    pub(super) items: Vec<GoiY>,
 }
 
 /// Các `use ./x` **địa phương** trong buffer (đủ để phát hiện đổi cấu trúc module mà không nạp lại).
@@ -131,15 +121,20 @@ fn goi_y_std(m: &str, f: &vis_hir::stdlib::StdFn) -> Option<GoiY> {
 ///
 /// **ST-100**: tệp chính luôn phân tích lại từ `text`; chỉ **item do module phụ** được cache khi danh
 /// sách `use ./…` và `(mtime,size)` của mọi tệp phụ không đổi.
-pub(crate) fn phan_tich_module(path: &Path, text: &str, mode: Mode) -> Option<KetQua> {
+pub(crate) fn phan_tich_module(
+    path: &Path,
+    text: &str,
+    mode: Mode,
+    cache: &mut HashMap<PathBuf, MucModule>,
+    load: &mut vis_loader::modules::LoadState,
+) -> Option<KetQua> {
     let dir = path.parent().unwrap_or_else(|| Path::new("."));
     let use_now = use_dia_phuong(text, dir);
     let khoa = path.to_path_buf();
-    if let Some(m) = CACHE_MOD.with(|c| {
-        c.borrow()
-            .get(&khoa)
-            .and_then(|m| (m.use_dp == use_now && phu_con_nguyen(&m.phu)).then(|| m.items.clone()))
-    }) {
+    if let Some(m) = cache
+        .get(&khoa)
+        .and_then(|m| (m.use_dp == use_now && phu_con_nguyen(&m.phu)).then(|| m.items.clone()))
+    {
         let mut kq = phan_tich::phan_tich(text, mode);
         let mut da: HashSet<String> = kq.items.iter().map(|g| g.label.clone()).collect();
         for g in m {
@@ -149,7 +144,9 @@ pub(crate) fn phan_tich_module(path: &Path, text: &str, mode: Mode) -> Option<Ke
         }
         return Some(kq);
     }
-    let l = vis_loader::modules::load_full_voi_text(path.to_str()?, text, true, true).ok()?;
+    let l =
+        vis_loader::modules::load_full_voi_text_trang_thai(path.to_str()?, text, true, true, load)
+            .ok()?;
     let mut kq = phan_tich::phan_tich(text, mode);
     let ten_chinh = path.file_name()?.to_string_lossy().to_string();
     let mut da: HashSet<String> = kq.items.iter().map(|g| g.label.clone()).collect();
@@ -205,23 +202,27 @@ pub(crate) fn phan_tich_module(path: &Path, text: &str, mode: Mode) -> Option<Ke
             });
         }
     }
-    CACHE_MOD.with(|c| {
-        c.borrow_mut().insert(
-            khoa,
-            MucModule {
-                use_dp: use_now,
-                phu,
-                items: phu_items,
-            },
-        );
-    });
+    cache.insert(
+        khoa,
+        MucModule {
+            use_dp: use_now,
+            phu,
+            items: phu_items,
+        },
+    );
     Some(kq)
 }
 
 /// Phân tích theo URI: tệp có trên đĩa ⇒ module-aware; ngược lại đường **một tệp** như trước.
-pub(crate) fn phan_tich_uri(uri: &str, text: &str, mode: Mode) -> KetQua {
+pub(crate) fn phan_tich_uri(
+    uri: &str,
+    text: &str,
+    mode: Mode,
+    cache: &mut HashMap<PathBuf, MucModule>,
+    load: &mut vis_loader::modules::LoadState,
+) -> KetQua {
     if let Some(p) = super::uri_thanh_duong(uri).filter(|p| Path::new(p).is_file()) {
-        if let Some(kq) = phan_tich_module(Path::new(&p), text, mode) {
+        if let Some(kq) = phan_tich_module(Path::new(&p), text, mode, cache, load) {
             return kq;
         }
     }
@@ -259,11 +260,14 @@ mod tests {
         // **ST-164**: 5 vòng, lấy **min**; mỗi vòng dọn cache ⇒ cả 5 vòng đều nạp **nguội** thật
         // (không dọn thì vòng 2..5 ăn cache ST-100, min ≈ 0 và phép đo vô nghĩa).
         let mut min_ms: u128 = u128::MAX;
+        let mut cache = HashMap::new();
+        let mut load = vis_loader::modules::LoadState::default();
         for vong in 1..=5 {
-            xoa_cache_module();
+            cache.clear();
             let t = std::time::Instant::now();
             for p in &tep {
-                let kq = phan_tich_module(p, src, Mode::Script).expect("nạp module");
+                let kq = phan_tich_module(p, src, Mode::Script, &mut cache, &mut load)
+                    .expect("nạp module");
                 assert!(
                     kq.items.iter().any(|g| g.label == "tinh"),
                     "thiếu item module: {}",
@@ -305,13 +309,16 @@ mod tests {
         let p = d.join("m.vis");
         std::fs::write(&p, src).expect("ghi chính");
         // 2 lượt warmup: nạp module + cache `(mtime,size)` ổn định trước khi đo.
+        let mut cache = HashMap::new();
+        let mut load = vis_loader::modules::LoadState::default();
         for _ in 0..2 {
-            assert!(phan_tich_module(&p, src, Mode::Script).is_some());
+            assert!(phan_tich_module(&p, src, Mode::Script, &mut cache, &mut load).is_some());
         }
         let mut ds: Vec<f64> = Vec::with_capacity(9);
         for _ in 0..9 {
             let t = std::time::Instant::now();
-            let kq = phan_tich_module(&p, src, Mode::Script).expect("nạp module");
+            let kq =
+                phan_tich_module(&p, src, Mode::Script, &mut cache, &mut load).expect("nạp module");
             assert!(kq.items.iter().any(|g| g.label == "f0"));
             ds.push(t.elapsed().as_secs_f64() * 1000.0);
         }
