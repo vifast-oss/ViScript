@@ -363,10 +363,55 @@ fn main():
         Err(e): print("closed={e.message}")
 "#;
 
+/// **#202** — thay số mili-giây **đo thật** trong thông điệp hết giờ (`… sau 78 ms`) bằng `<N>`.
+/// `get_timeout`/`head_timeout` truyền **phần deadline còn lại** xuống lớp đọc, nên interp và VM
+/// chạy tuần tự lệch nhau 1 ms là bình thường; phần chữ nghĩa còn lại (tên hàm, handle, đơn vị)
+/// vẫn được so **từng byte**.
+fn chuan_hoa_ms(s: &str) -> String {
+    let mut ra = String::with_capacity(s.len());
+    let mut con = s;
+    while let Some(i) = con.find(" ms") {
+        let b = &con.as_bytes()[..i];
+        let mut j = b.len();
+        while j > 0 && b[j - 1].is_ascii_digit() {
+            j -= 1;
+        }
+        if j == b.len() {
+            // Không phải số trước ` ms`: giữ nguyên rồi đi tiếp.
+            ra.push_str(&con[..i + 3]);
+            con = &con[i + 3..];
+        } else {
+            ra.push_str(&con[..j]);
+            ra.push_str("<N>");
+            con = &con[i..];
+        }
+    }
+    ra.push_str(con);
+    ra
+}
+
+/// **#202** — bộ chuẩn hoá chỉ thay **số** ngay trước ` ms`; chữ/đơn vị/token khác giữ nguyên.
+#[test]
+fn chuan_hoa_ms_chi_thay_so_do_thuc() {
+    let vao = "slow=quá thời gian chờ dữ liệu từ `C9` sau 78 ms\n\
+               slowhead=quá thời gian chờ dữ liệu từ `C10` sau 79 ms\n";
+    assert_eq!(
+        chuan_hoa_ms(vao),
+        "slow=quá thời gian chờ dữ liệu từ `C9` sau <N> ms\n\
+         slowhead=quá thời gian chờ dữ liệu từ `C10` sau <N> ms\n"
+    );
+    // Không có số trước ` ms` ⇒ không đổi; số đứng riêng vẫn bị thay đúng một lần.
+    assert_eq!(chuan_hoa_ms("không có số ms"), "không có số ms");
+    assert_eq!(chuan_hoa_ms("123 ms"), "<N> ms");
+}
+
 /// **ST-315d** — 4 hàm `http` (`get`, `get_timeout`, `head`, `head_timeout`) tới server
 /// HTTP/1.1 loopback thật. `head` nhận `Content-Length: 999999` **không body** mà vẫn `Ok`
 /// (chứng minh không đọc thân); server trễ 300 ms > timeout 80 ms ⇒ **lỗi dữ liệu** parity;
 /// cổng đóng ⇒ `Err` ("bị từ chối"/timeout tuỳ OS), vẫn cùng byte giữa hai engine.
+///
+/// **#202 (ST-318b)** — stdout của ca này có **số ms đo thật** trong `e.message` hết giờ, nên hai
+/// engine lệch 1 ms là flake; [`chuan_hoa_ms`] thay đúng token số, giữ nguyên phần còn lại.
 #[test]
 fn http_bon_ham_parity() {
     let (addr, stop, h) = http_server(12);
@@ -383,7 +428,7 @@ fn http_bon_ham_parity() {
         .replace("__SLOW__", &format!("http://{addr}/cham"))
         .replace("__SLOWHEAD__", &format!("http://{addr}/cham-head"))
         .replace("__CLOSED__", &format!("http://{dong_addr}/"));
-    let (out, err) = hai_duong(&d, "http", &src);
+    let (out, err) = hai_duong_chuan_hoa(&d, "http", &src, || {}, chuan_hoa_ms);
     let dong: Vec<&str> = out.lines().collect();
     assert_eq!(dong.len(), 7, "http: {out}\nstderr: {err}");
     assert_eq!(
@@ -397,12 +442,16 @@ fn http_bon_ham_parity() {
         "http OK/HEAD: {out}"
     );
     assert!(
-        dong[4].starts_with("slow=") && dong[4].contains("quá thời gian"),
+        dong[4].starts_with("slow=")
+            && dong[4].contains("quá thời gian")
+            && dong[4].ends_with(" sau <N> ms"),
         "get_timeout phải hết giờ: {}",
         dong[4]
     );
     assert!(
-        dong[5].starts_with("slowhead=") && dong[5].contains("quá thời gian"),
+        dong[5].starts_with("slowhead=")
+            && dong[5].contains("quá thời gian")
+            && dong[5].ends_with(" sau <N> ms"),
         "head_timeout phải hết giờ: {}",
         dong[5]
     );
