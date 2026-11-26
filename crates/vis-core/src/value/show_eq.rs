@@ -5,6 +5,8 @@
 //! Mô-đun con của `value` nên vẫn gọi được helper private của cha (`show_size`, `show_float`, …)
 //! và ngược lại; không nhân bản luật.
 
+use std::hash::{BuildHasherDefault, Hasher};
+
 use super::*;
 
 impl Value {
