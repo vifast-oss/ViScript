@@ -157,3 +157,84 @@ fn main():
 "#;
     assert_eq!(bon_duong("lambda-long-ghi", SRC), "1\n2\n7\n");
 }
+
+// ---------------------------------------------------------------------------
+// ST-319e (#210) — **hàm tên** cấp tệp gọi từ closure dùng **env module** (global live),
+// không thừa hưởng snapshot của closure. Snapshot `HExpr::Lambda` (§4.7) giữ nguyên.
+// ---------------------------------------------------------------------------
+
+/// Ca A — closure gọi hàm tên **ghi** global: ghi vào module, không vào snapshot closure.
+#[test]
+fn a_closure_goi_ham_ten_ghi_global() {
+    const SRC: &str = r#"var g = 0
+fn tang():
+    g = 1
+fn main():
+    let f = fn(): tang()
+    f()
+    print(g)
+"#;
+    assert_eq!(bon_duong("319e-A-ghi", SRC), "1\n");
+}
+
+/// Ca B — closure gọi hàm tên **đọc** global: thấy giá trị module **live** sau khi main đổi.
+#[test]
+fn b_closure_goi_ham_ten_doc_global_live() {
+    const SRC: &str = r#"var g = 7
+fn doc() -> int: g
+fn main():
+    let f = fn() -> int: doc()
+    g = 9
+    print(f())
+"#;
+    assert_eq!(bon_duong("319e-B-doc", SRC), "9\n");
+}
+
+/// Ca C2 — **giá trị** hàm tên (`let h = tang`) tạo **trong closure** cũng mang env module.
+#[test]
+fn c2_gia_tri_ham_ten_trong_closure_dung_env_module() {
+    const SRC: &str = r#"var g = 0
+fn tang():
+    g = 1
+fn main():
+    let f = fn():
+        let h = tang
+        h()
+    f()
+    print(g)
+"#;
+    assert_eq!(bon_duong("319e-C2-gia-tri", SRC), "1\n");
+}
+
+/// Ca E — trong closure: gọi `tang()` ghi module, rồi đọc `g` **của closure** vẫn là snapshot
+/// `0` (env được khôi phục sau khi hàm tên trả về); global ngoài `1`.
+#[test]
+fn e_khoi_phuc_env_closure_sau_khi_goi_ham_ten() {
+    const SRC: &str = r#"var g = 0
+fn tang():
+    g = 1
+fn main():
+    let f = fn() -> int:
+        tang()
+        g
+    print(f())
+    print(g)
+"#;
+    assert_eq!(bon_duong("319e-E-khoi-phuc", SRC), "0\n1\n");
+}
+
+/// Ca P5 — main đổi global **sau** khi tạo closure; hàm tên trong closure ghi global **live**
+/// (đè `g = 5`), closure không giữ bản sao ghi.
+#[test]
+fn p5_ham_ten_trong_closure_ghi_global_live() {
+    const SRC: &str = r#"var g = 0
+fn tang():
+    g = 1
+fn main():
+    let f = fn(): tang()
+    g = 5
+    f()
+    print(g)
+"#;
+    assert_eq!(bon_duong("319e-P5-live", SRC), "1\n");
+}

@@ -324,7 +324,7 @@ impl Gen {
     }
 
     fn nhom_closure_cap_tep(&mut self) -> String {
-        match self.rng.duoi(4) {
+        match self.rng.duoi(8) {
             0 => r#"var g = 0
 fn main():
     let f = fn() -> int: g
@@ -352,13 +352,56 @@ fn main():
     print(g)
 "#
             .to_string(),
-            _ => r#"var g = 0
+            3 => r#"var g = 0
 fn main():
     let ngoai = fn() -> fn() -> int:
         fn() -> int:
             g
     g = 7
     let f = ngoai()
+    print(f())
+    print(g)
+"#
+            .to_string(),
+            // **ST-319e (#210)**: hàm tên gọi từ closure dùng env module (ghi global live).
+            4 => r#"var g = 0
+fn tang():
+    g = 1
+fn main():
+    let f = fn(): tang()
+    f()
+    print(g)
+"#
+            .to_string(),
+            // **ST-319e (#210)**: hàm tên gọi từ closure **đọc** global live của module.
+            5 => r#"var g = 7
+fn doc() -> int: g
+fn main():
+    let f = fn() -> int: doc()
+    g = 9
+    print(f())
+"#
+            .to_string(),
+            // **ST-319e (#210)**: `let h = tang` trong closure — giá trị hàm tên mang env module.
+            6 => r#"var g = 0
+fn tang():
+    g = 1
+fn main():
+    let f = fn():
+        let h = tang
+        h()
+    f()
+    print(g)
+"#
+            .to_string(),
+            // **ST-319e (#210)**: env closure được khôi phục sau khi hàm tên trả về.
+            _ => r#"var g = 0
+fn tang():
+    g = 1
+fn main():
+    let f = fn() -> int:
+        tang()
+        g
     print(f())
     print(g)
 "#
