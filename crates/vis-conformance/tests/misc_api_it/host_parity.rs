@@ -577,7 +577,9 @@ fn fs_20_ham_parity_tren_tempdir() {
     let src = SRC_FS.replace("__W__", &duong(&work));
     let (out, err) = hai_duong_voi(&d, "fs", &src, || dat_fixture(&work));
     // Không có `link.txt` trên Windows ⇒ `walk` ít hơn đúng 1 mục.
-    let walk_n = if cfg!(unix) { 10 } else { 9 };
+    // `fs.walk` bỏ symlink trên **mọi** nền tảng ⇒ `link.txt` không được đếm; fixture còn
+    // đúng 10 mục ở cả Unix lẫn Windows (R-Win2 phát hiện kỳ vọng 9 cũ sai).
+    let walk_n = 10;
     let mong = format!(
         "exists-a=true\n\
          exists-x=false\n\
