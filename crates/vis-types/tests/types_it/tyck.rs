@@ -401,6 +401,15 @@ fn const_chu_trinh_bi_bat_tinh_voi_vs0304() {
         vec!["VS0304", "VS0304", "VS0304"],
         "SCC phải báo đủ 3 const"
     );
+    // Hai chu trình rời nhau ⇒ 4 chẩn đoán, không nuốt chu trình thứ hai.
+    let (hai, _) = run(
+        "const A: int = B\nconst B: int = A\nconst C: int = D\nconst D: int = C\nfn main():\n    print(A + C)\n",
+    );
+    assert_eq!(
+        hai.codes(),
+        vec!["VS0304", "VS0304", "VS0304", "VS0304"],
+        "hai chu trình rời phải báo đủ 4"
+    );
     // Không báo nhầm chuỗi phụ thuộc hợp lệ.
     let (ok, _) = run("const A: int = 1\nconst B: int = A + 1\nfn main():\n    print(B)\n");
     assert!(
