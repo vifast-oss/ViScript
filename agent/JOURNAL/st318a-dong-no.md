@@ -149,3 +149,34 @@ Không `#[ignore]`; 13/13 test của tệp PASS.
   QuotaExceeded }` khi `/tmp` (tmpfs) đầy 6,1/7,2 GB do cache binary `vs3-w2-bin-cache-*` của
   nhiều tiến trình; chạy lại 2 ca `quyen*` với `TMPDIR` trên đĩa ⇒ **PASS**. Gate lại đặt
   `TMPDIR=/home/ps/vislogs/tmp` (đĩa còn > 6 GB).
+
+## 7. F2 — dirty-set cho `nap` (P2-C var-heavy)
+
+- **Nguyên nhân P2-C**: F1 vẫn quét **toàn bộ `frame.mutable`** mỗi turn; chương trình khai báo
+  nhiều `var` top-level (dù không ghi) làm `nap` clone O(#var) mỗi turn ⇒ 20k `var` + 2k await
+  chậm ~20×, 5k var ~15×, 1k var + 10k await ~7×.
+- **F2**: `DongBo` (trong `frame/worker.rs`) — sổ **dirty-set** `sym → seq` chỉ đánh dấu sym **thực
+  sự bị ghi** (`DongBo::ghi` sau `ApplyAssignVar`/`ApplyAssignPath`/writeback `ApplyMethod`, kể cả
+  no-main nơi env chính là globals); mỗi frame nhớ `frame_seq` và `nap` chỉ chép các sym có
+  `seq > frame_seq` vào env của nó. `prune` dọn mục mà mọi frame sống đã thấy (chỉ khi sổ ≥ 64).
+  Việc ghi vẫn cập nhật ngay mọi call-frame của frame đang chạy (đọc cùng step đúng như F1).
+- Semantics `#203` giữ nguyên: 5 ca `w2`, `w2nested`, `w2two`, `w2read`, `w2nomain` interp = VM
+  (`1/1/2/5/1`), khoá bằng test mới `w15` (2 task cộng dồn = `2`) và `w16` (main ghi trước await
+  = `5`) cho **frame W=1 cả interp + VM**.
+- **P2-C frame VM W≥2**: thêm `w17` dùng `vis_vm::run_async_workers_with_full_hosts_caps`
+  (production `vis run --vm --workers N`) — task lỗi không await ⇒ exit 1, `VS0506` `hong`,
+  stdout `sau\n`; W=2/4 PASS.
+- Thêm `w14` var-heavy nhỏ (200 `var`, 3 sym bị ghi): `1/17/201/100`, parity interp ↔ VM.
+
+### Đo lại (median 5 lần, main / F1 / **F2**, cùng lượt; binary debug cùng máy)
+
+| Kịch bản | main (ms) | F1 (ms) | **F2 (ms)** | F2/main |
+|---|---|---|---|---|
+| 20k `var` + 2k await | 2.688 | **54.400** (1 lần; ~20×) | **2.775** | **~1,03×** |
+| 5k `var` + 1k await | 422 | **6.332** (~15×) | **442** | **~1,05×** |
+| 1k `var` + 10k await | 1.721 | **12.162** (~7×) | **2.065** | **~1,20×** |
+| 20k `var` + 0 await (đối chứng) | 635 | 601 | **625** | ~0,98× |
+| 20k `const` + 2k await | 2.389 | 2.371 | **2.403** | ~1,01× |
+
+(Máy có tải nền ~10–13 load; số tuyệt đối cao hơn lúc rảnh, nhưng main/F1/F2 đo xen kẽ cùng
+lượt nên tỉ lệ là đối chứng. Log: `/home/ps/vislogs/st318a-fix2-perf2.log`.)
