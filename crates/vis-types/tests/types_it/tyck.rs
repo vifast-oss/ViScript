@@ -393,6 +393,14 @@ fn const_chu_trinh_bi_bat_tinh_voi_vs0304() {
         "kim cương không được báo: {:?}",
         diamond.codes()
     );
+    // SCC ba đỉnh (A→B,C; B→A; C→B): **cả 3** đều nằm trong chu trình, không chỉ A/B.
+    let (scc, _) =
+        run("const A: int = B + C\nconst B: int = A\nconst C: int = B\nfn main():\n    print(A)\n");
+    assert_eq!(
+        scc.codes(),
+        vec!["VS0304", "VS0304", "VS0304"],
+        "SCC phải báo đủ 3 const"
+    );
     // Không báo nhầm chuỗi phụ thuộc hợp lệ.
     let (ok, _) = run("const A: int = 1\nconst B: int = A + 1\nfn main():\n    print(B)\n");
     assert!(

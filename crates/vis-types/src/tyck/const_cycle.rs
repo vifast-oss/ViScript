@@ -35,58 +35,83 @@ pub(super) fn kiem(hir: &Hir, diags: &mut Vec<Diagnostic>) {
             v
         })
         .collect();
-    let mut mau = vec![0u8; ds.len()];
+    let mut chi_so = vec![usize::MAX; ds.len()];
+    let mut low = vec![0usize; ds.len()];
+    let mut tren_ngan_xep = vec![false; ds.len()];
     let mut ngan_xep: Vec<usize> = Vec::new();
-    let mut da_bao = vec![false; ds.len()];
+    let mut dem = 0usize;
+    let mut sccs: Vec<Vec<usize>> = Vec::new();
     for i in 0..ds.len() {
-        if mau[i] == 0 {
-            dfs(i, &canh, &mut mau, &mut ngan_xep, &mut da_bao, &ds, diags);
+        if chi_so[i] == usize::MAX {
+            tarjan(
+                i,
+                &canh,
+                &mut chi_so,
+                &mut low,
+                &mut tren_ngan_xep,
+                &mut ngan_xep,
+                &mut dem,
+                &mut sccs,
+            );
+        }
+    }
+    for scc in sccs {
+        let tu_thanh = scc.len() > 1 || canh[scc[0]].contains(&scc[0]);
+        if !tu_thanh {
+            continue;
+        }
+        let mut ds_scc = scc;
+        ds_scc.sort_unstable();
+        let ten: Vec<&str> = ds_scc.iter().map(|&i| ds[i].name.as_str()).collect();
+        let duong = ten.join(" → ");
+        for i in ds_scc {
+            diags.push(Diagnostic {
+                code: super::CONST_CYCLE,
+                message: format!("chu trình phụ thuộc hằng số (`const`): {duong}"),
+                span: ds[i].span,
+                line: 0,
+                col: 0,
+            });
         }
     }
 }
 
 #[allow(clippy::too_many_arguments)]
-fn dfs(
+fn tarjan(
     u: usize,
     canh: &[Vec<usize>],
-    mau: &mut [u8],
+    chi_so: &mut [usize],
+    low: &mut [usize],
+    tren_ngan_xep: &mut [bool],
     ngan_xep: &mut Vec<usize>,
-    da_bao: &mut [bool],
-    ds: &[&vis_hir::hir::HConst],
-    diags: &mut Vec<Diagnostic>,
+    dem: &mut usize,
+    sccs: &mut Vec<Vec<usize>>,
 ) {
-    mau[u] = 1;
+    chi_so[u] = *dem;
+    low[u] = *dem;
+    *dem += 1;
     ngan_xep.push(u);
+    tren_ngan_xep[u] = true;
     for &v in &canh[u] {
-        match mau[v] {
-            0 => dfs(v, canh, mau, ngan_xep, da_bao, ds, diags),
-            1 => {
-                // Cạnh ngược: đoạn `v..=u` trên ngăn xếp DFS chính là một chu trình.
-                let dau = ngan_xep
-                    .iter()
-                    .position(|&x| x == v)
-                    .expect("đỉnh xám phải có trên ngăn xếp");
-                let chu_trinh = &ngan_xep[dau..];
-                let ten: Vec<&str> = chu_trinh.iter().map(|&i| ds[i].name.as_str()).collect();
-                let duong = ten.join(" → ");
-                for &i in chu_trinh {
-                    if !da_bao[i] {
-                        da_bao[i] = true;
-                        diags.push(Diagnostic {
-                            code: super::CONST_CYCLE,
-                            message: format!("chu trình phụ thuộc hằng số (`const`): {duong}"),
-                            span: ds[i].span,
-                            line: 0,
-                            col: 0,
-                        });
-                    }
-                }
-            }
-            _ => {}
+        if chi_so[v] == usize::MAX {
+            tarjan(v, canh, chi_so, low, tren_ngan_xep, ngan_xep, dem, sccs);
+            low[u] = low[u].min(low[v]);
+        } else if tren_ngan_xep[v] {
+            low[u] = low[u].min(chi_so[v]);
         }
     }
-    ngan_xep.pop();
-    mau[u] = 2;
+    if low[u] == chi_so[u] {
+        let mut scc = Vec::new();
+        loop {
+            let w = ngan_xep.pop().expect("ngăn xếp Tarjan không rỗng");
+            tren_ngan_xep[w] = false;
+            scc.push(w);
+            if w == u {
+                break;
+            }
+        }
+        sccs.push(scc);
+    }
 }
 
 fn thu_cond(c: &HCond, chi_so: &HashMap<u32, usize>, ra: &mut Vec<usize>) {
