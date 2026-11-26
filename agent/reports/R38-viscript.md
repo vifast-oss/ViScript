@@ -70,6 +70,7 @@ clippy/rules 0; R8 **39/40**; **R1 0 tệp sản phẩm > 1.000**; 0 `unsafe`.
 gate **3934/3934** (4 skip), diff 100k **`lech=0`** 79,7 s, `CLIPPY_EXIT=0`, `RULES_EXIT=0`;
 R1 **0 tệp sản phẩm > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` không đổi.
 
+**WASI final2 (cross-ref §1.1/§2)**: đo lại trên cây cuối @`8c883a16` (code `ee8f252d`, `dirty=0`) — conformance **398×2 (371+27)**, sem **390/390**, suite **28/28**; log `st316c-wasm-final2-20261126T2130Z.log` sha256 `60064a5c…996bbb`.
 ## 2. Bảng số đo chính
 
 | Hạng mục | Kết quả | Mốc / log |
@@ -86,7 +87,7 @@ R1 **0 tệp sản phẩm > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` kh
 | Clippy `--all-targets -D warnings` | **exit 0 / 0 warning** | gate cuối + mọi lát audit |
 | R10 (`API-CODES` ↔ `SPEC` §7.2) | **57 mã**, fixtures **20/20** | `review-st317c.md` §2 |
 | Rules / DAG | R1..R10 OK; DAG **23 crate/5 tầng/0 cạnh cấm** | gate log |
-| `report-check --all` | **PASS — 36 báo cáo, 380 hàng QUEUE** | `main` `4caa600e` |
+| `report-check --all` | **PASS — 36 báo cáo, 380 hàng QUEUE @`4caa600e`** (hiện tại **382 @HEAD**) | `main` `977a61b0` |
 
 **Ghi chú đếm**: số test tăng theo lát (319a +5, 319c2 +5, 319d +6, 319e +2) nên 3912 → 3917 →
 3921 → 3922 → 3929 → **3934** là các cây khác nhau, không phải hồi quy.
@@ -103,7 +104,7 @@ R1 **0 tệp sản phẩm > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` kh
 | `StdId` | **167/167** khớp `API-STD.txt`; dispatcher không `_ =>` | `ST-317c` | test đếm + ca âm |
 | `lsp_it` | **158/158**; `vis-lsp --lib` **29/29** | `ST-317c` | 0 `thread_local!` thật |
 | Conformance | **568/568** | `ST-317a` | sau nén `Value` |
-| WASI (`ps`) | **398×2 = 371 `.out` + 27 `.trap`**, 0 hỏng; sem **390/390**; suite **28/28**; core **47/0**, sqlite **45+2** | **final2 @`8c883a16`** (code `ee8f252d`) | `st316c-wasm-final2-20261126T2130Z.log` sha256 `60064a5c…996bbb`, `dirty=0`; binary wasm build lại **4.037.106 B** |
+| WASI (`ps`) | **398×2 = 371 `.out` + 27 `.trap`**, 0 hỏng; sem **390/390**; suite **28/28**; core **47/0**, sqlite **45+2** | **final2 @`8c883a16`** (code `ee8f252d`) | `st316c-wasm-final2-20261126T2130Z.log` sha256 `60064a5c…996bbb`, `dirty=0`; binary wasm build lại (log final2), **kích thước không ghi trong log** |
 | Worker W1..W24 | **32 test** `st317b_worker_orchestrate` | `ST-319d` | 0 `#[ignore]` |
 | Rustdoc | `vis-hir` + `vis-interp` `-D warnings` **exit 0** | 318i/319b | 0 warning |
 | R1 | **0 tệp sản phẩm `*/src/*` > 1.000** (max **1000**, `run_cmd.rs`; `frame.rs` 159); toàn bộ `.rs` có **6 tệp test >1.000** (max `stdlib_ty.rs` 1275); R1 cứng ≤1.500 **PASS** | `ee8f252d` | KPI Sóng 7 13 → 0 (phạm vi sản phẩm) |
@@ -142,7 +143,7 @@ Sổ hiện tại (`4caa600e`): **210 = 82 mở + 109 đóng + 16 VS3 + 2 không
 | 3 | **`#200`/`#201`** còn mở | P1 correctness | Sóng 9: chuẩn hoá arity/kiểu argv 2 engine + ca conformance |
 | 4 | **P3 còn lại**: `var self` push, closure W>1, `PushBien` diff | P3 | Ghi nhận, xử khi mở lane codegen/closure tiếp theo |
 | 5 | **R1 sát ngưỡng**: `run_cmd.rs` đúng **1000** dòng (phạm vi sản phẩm `*/src/*`; 6 tệp test >1.000 không tính R1 sản phẩm, trần cứng 1.500 vẫn PASS) | P2 | Không tăng; tách khi chạm 1.001 |
-| 6 | **Worktree `st319d`/`st319e`** — **đã dọn 06:20**, chỉ còn `main` | — | Không còn việc; giữ `plan/st309-qa` |
+| 6 | **Worktree** — tại 06:20 chỉ còn `main`; hiện có thêm **`st320a`/`st320b`** (Sóng 9 nhỏ, branch riêng) | P2 hành chính | Dọn `st320a/b` sau khi Sóng 9 xong; giữ `plan/st309-qa` |
 | 7 | **Chain 0-LLM chưa chạy**; `mps` @`311d2288`, `psvn` @`fe3446d2` lệch | P1 cho 316c | Chạy trong cao điểm; không sửa chain |
 
 **Không tuyên bố**: 3-OS khi chưa có log `mps`/`psvn`; phát hành/tag (`VD-289`); “API-VBC1 rỗng”
@@ -174,7 +175,7 @@ theo nghĩa file rỗng — đúng là **diff không đổi**.
 2. **Sóng 9 — correctness còn lại**: `#200`/`#201` (arity/kiểu `argv` 2 engine), P3 còn lại
    (`var self` push, closure W>1, `PushBien` diff), dọn rustdoc toàn workspace.
 3. **R1**: giữ 0 tệp sản phẩm > 1.000; theo dõi `run_cmd.rs` đúng **1000** — tách khi vượt.
-4. **Worktree** `st319d`/`st319e` **đã dọn** (chỉ còn `main`); giữ `plan/st309-qa`; `worktree ≤ 8`.
+4. **Worktree**: tại 06:20 chỉ còn `main`; hiện thêm **`st320a`/`st320b`** (Sóng 9 nhỏ, branch riêng); dọn sau khi Sóng 9 xong; giữ `plan/st309-qa`; `worktree ≤ 8`.
 5. **Không** mở lại Pha Phát hành (`ST-309`) trừ khi người dùng quyết định; giữ `VD-289`.
 
 ## 7. Checklist chốt R38
@@ -184,5 +185,5 @@ theo nghĩa file rỗng — đúng là **diff không đổi**.
 - [x] R1 **0 tệp sản phẩm > 1.000** (6 tệp test >1.000 không tính; trần 1.500 PASS); R8 **39/40**; 0 `unsafe`; `API-VBC1.txt` không đổi.
 - [x] Sổ **210 = 82 mở + 109 đóng + 16 VS3 + 2 + 1**; `#206`–`#210` đóng; `#200/#201` mở.
 - [x] WASI **final2 @`8c883a16`** (code `ee8f252d`, `dirty=0`): 398×2, sem 390/390, suite 28/28.
-- [x] `R38-viscript.json` + `.license`; `report-check --all` PASS (36 báo cáo, 380 hàng QUEUE).
+- [x] `R38-viscript.json` + `.license`; `report-check --all` PASS (36 báo cáo, **380 hàng QUEUE @`4caa600e`; hiện tại 382 @HEAD**).
 - [ ] `ST-316c` 3-OS + chain thật (giữ `BLOCKED`).

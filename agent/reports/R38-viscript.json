@@ -3458,7 +3458,7 @@
   "coverage": {
     "tokens": 0,
     "fixtures": 568,
-    "note": "conformance 568/568 @ST-317a; WASI 398×2 (371+27) @d97773de"
+    "note": "conformance 568/568 @ST-317a; WASI 398×2 @d97773de (lịch sử); final2 @8c883a16 (code ee8f252d) PASS"
   },
   "mutants": {
     "measured": false,
@@ -3472,12 +3472,13 @@
     "linux_gate": "PASS @ee8f252d: 3934/3934 (4 skip); diff 100k lech=0 79,7 s; clippy 0; rules 0; R8 39/40",
     "kpi": "Value 32B; Record CoW ~34×; writebench ~240×; listbench 13–21×; StdId 167; WASI 398×2; worker 32 test",
     "so_no": "210 = 82 mở + 109 đóng + 16 VS3 + 2 không làm + 1 điều hướng",
-    "wasi": "398×2 (371+27) final2 @8c883a16 (code ee8f252d); sem 390/390; suite 28/28; core 47/0; sqlite 45+2; dirty=0"
+    "wasi": "398×2 (371+27) final2 @8c883a16 (code ee8f252d); sem 390/390; suite 28/28; core 47/0; sqlite 45+2; dirty=0",
+    "wasi_final2": "398×2 (371+27) @8c883a16 (code ee8f252d), dirty=0; sem 390/390; suite 28/28; core 47/0; sqlite 45+2"
   },
   "blocked": [
     {
       "id": "ST-316c",
-      "question": "BLOCKED: chờ log 3-OS macOS mps @311d2288 / psvn @fe3446d2 + chạy chain 0-LLM e239c317…; ps đã có WASI 398×2 @d97773de"
+      "question": "BLOCKED: chờ log 3-OS macOS mps @311d2288 / psvn @fe3446d2 + chạy chain 0-LLM e239c317…; ps đã có WASI final2 398×2 @8c883a16"
     },
     {
       "id": "ST-309",
