@@ -78,6 +78,8 @@ mod vs3_worker_frame_vm;
 mod api_dong_bang;
 #[path = "misc_api_it/conformance_trap.rs"]
 mod conformance_trap;
+#[path = "misc_api_it/host_parity.rs"]
+mod host_parity;
 #[path = "misc_api_it/so_ma.rs"]
 mod so_ma;
 #[path = "misc_api_it/vs3_coverage_matrix.rs"]
