@@ -2,7 +2,7 @@
 //! **ST-267 / VD-251 — LÁT 1 (chỉ test/debug)**, mở rộng **ST-274 / VD-255**:
 //! frame-aware scheduler nối vào **đường interp thật**.
 //!
-//! Đây **không** phải model/harness độc lập: `run_frame_for_test` dựng đúng [`Interp`]
+//! Đây **không** phải model/harness độc lập: `run_frame_for_test` dựng đúng `Interp`
 //! thật (HIR thật sau parse/lower/check), dùng [`crate::builtin::call`], [`crate::ops::bin`],
 //! [`crate::value::Value`], [`crate::interp::Trap`] và [`crate::rt::Scheduler`] thật. Điểm khác
 //! duy nhất là **chiến lược đánh giá**: thay vì Rust call stack (`eval`/`exec_stmt` đệ quy),
