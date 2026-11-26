@@ -29,7 +29,7 @@ pub struct HFrame {
 /// Loại khai báo trong bảng ký hiệu.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SymKind {
-    /// Tên giá trị dựng sẵn ([`BUILTIN_VALUE_NAMES`]).
+    /// Tên giá trị dựng sẵn (`vis_types::lower::BUILTIN_VALUE_NAMES`).
     Builtin,
     /// Khai báo cấp tệp (fn/type/enum/alias/const/…) hoặc phương thức.
     Item,
