@@ -60,18 +60,18 @@ fn value_parse_size_duration_va_exit_code() {
 
 #[test]
 fn value_kich_thuoc_va_map_cow() {
-    // **ST-315b (VD-291 §3.2 / VD-03)**: khoá kích thước `Value` — `Map` chỉ giữ một `Rc`
-    // (8 B), không nhúng `Vec` (24 B) vào biến thể.
+    // **ST-317a (VD-292 §4.1)**: `Record`/`Enum` bọc `Rc`, `Cap` bọc `Box` ⇒ `Value` từ 64 B
+    // xuống **32 B** trên 64-bit (payload lớn nhất còn 24 B: `Str`/`Bytes`/`Path`).
     assert!(
-        std::mem::size_of::<Value>() <= 64,
+        std::mem::size_of::<Value>() <= 32,
         "Value phình: {} B",
         std::mem::size_of::<Value>()
     );
     #[cfg(target_pointer_width = "64")]
     assert_eq!(
         std::mem::size_of::<Value>(),
-        64,
-        "ST-315b: trên 64-bit Value phải đúng 64 B (VD-03)"
+        32,
+        "ST-317a: trên 64-bit Value phải đúng 32 B (VD-292)"
     );
 
     // CoW: `Value::clone` chỉ tăng refcount; ghi qua `Rc::make_mut` không đụng bản gốc.

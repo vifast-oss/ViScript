@@ -303,7 +303,13 @@ impl VisMap {
     }
 
     /// Bọc thành `Value::Map` chia sẻ.
+    ///
+    /// **ST-317a**: map rỗng dùng singleton (`{}` 0 cấp phát) — mọi đường ghi đều
+    /// `Rc::make_mut` nên không thể sửa bản dùng chung.
     pub fn thanh_gia_tri(self) -> Value {
+        if self.is_empty() {
+            return Value::map_rong();
+        }
         Value::Map(std::rc::Rc::new(self))
     }
 

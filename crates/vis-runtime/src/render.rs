@@ -27,8 +27,8 @@ fn so(v: &Value) -> bool {
 fn bang(items: &[Value]) -> String {
     let mut cot: Vec<String> = Vec::new();
     for it in items {
-        if let Value::Record(_, fields) = it {
-            for (k, _) in fields {
+        if let Value::Record(r) = it {
+            for (k, _) in &r.fields {
                 if !cot.contains(k) {
                     cot.push(k.clone());
                 }
@@ -44,7 +44,8 @@ fn bang(items: &[Value]) -> String {
         let mut r: Vec<String> = Vec::new();
         for c in &cot {
             let s = match it {
-                Value::Record(_, fields) => fields
+                Value::Record(r) => r
+                    .fields
                     .iter()
                     .find(|(k, _)| k == c)
                     .map(|(_, v)| v.show())
@@ -60,8 +61,8 @@ fn bang(items: &[Value]) -> String {
         let mut phai = true;
         let mut co_so = false;
         for it in items {
-            if let Value::Record(_, fields) = it {
-                if let Some((_, v)) = fields.iter().find(|(k, _)| k == c) {
+            if let Value::Record(r) = it {
+                if let Some((_, v)) = r.fields.iter().find(|(k, _)| k == c) {
                     if so(v) {
                         co_so = true;
                     } else {
@@ -101,10 +102,10 @@ fn ha_van_ban(f: impl FnOnce(&mut AnsiPosix<Vec<u8>>) -> std::io::Result<()>) ->
 /// `(rỗng)` **chỉ** cho `list[bản ghi]` rỗng; `list[str]`/`list[int]` rỗng vẫn `[]` (chốt Agent 0).
 pub fn in_gia_tri(v: &Value, co_ban_ghi: bool) -> Option<String> {
     match v {
-        Value::Record(_, fields) if !fields.is_empty() => Some(khoi(fields)),
+        Value::Record(r) if !r.fields.is_empty() => Some(khoi(&r.fields)),
         Value::List(items) if items.is_empty() && co_ban_ghi => Some("(rỗng)\n".to_string()),
         Value::List(items)
-            if !items.is_empty() && items.iter().all(|x| matches!(x, Value::Record(_, _))) =>
+            if !items.is_empty() && items.iter().all(|x| matches!(x, Value::Record(_))) =>
         {
             Some(bang(items))
         }
@@ -117,8 +118,8 @@ mod tests {
     use super::*;
 
     fn ban_ghi(ten: &str, n: i64) -> Value {
-        Value::Record(
-            "F".to_string(),
+        Value::record(
+            "F",
             vec![
                 ("name".to_string(), Value::Str(ten.to_string())),
                 ("n".to_string(), Value::Int(n)),

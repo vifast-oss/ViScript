@@ -101,15 +101,6 @@ pub(crate) struct Interp<'a> {
     // (thread-local, mặc định tắt) — Interp không giữ trạng thái; hành vi mặc định y hệt cũ.
 }
 
-/// **ST-316a** — con trỏ `Rc` trong `Map`/`List` (nhận diện ô chia sẻ, không chép dữ liệu).
-fn ptr_rc(v: &Value) -> Option<*const ()> {
-    match v {
-        Value::Map(k) => Some(std::rc::Rc::as_ptr(k) as *const ()),
-        Value::List(x) => Some(std::rc::Rc::as_ptr(x) as *const ()),
-        _ => None,
-    }
-}
-
 impl<'a> Interp<'a> {
     pub(crate) fn new(hir: &'a Hir, symbols: &'a Symbols, types: &'a TypeTable) -> Self {
         let mut fns = HashMap::new();
@@ -344,16 +335,10 @@ impl<'a> Interp<'a> {
     /// trị đang ghi (ô = `Unit` trong lúc ghi). Nhờ đó `Rc::make_mut` thấy `strong_count == 1`
     /// và cập nhật **tại chỗ O(1)**; trả `true` nếu đã tách để [`Self::tra_o`] khôi phục.
     pub(crate) fn tach_o(&mut self, id: u32, base: &Value) -> bool {
-        let Some(ptr) = ptr_rc(base) else {
-            return false;
-        };
         let mut env = self.env.borrow_mut();
-        match env.get(&id).and_then(ptr_rc) {
-            Some(p) if p == ptr => {
-                env.insert(id, Value::Unit);
-                true
-            }
-            _ => false,
+        match env.get_mut(&id) {
+            Some(o) => vis_runtime::value_ops::tach_neu_cung_rc(o, base),
+            None => false,
         }
     }
 
@@ -394,16 +379,24 @@ impl<'a> Interp<'a> {
         }
     }
 
+    /// **ST-317a F2 (P3a)** — kiểm quyền ghi **trước** khi tách ô; một nguồn thông điệp cho
+    /// `lvalue_set` và fast-path `with` (tránh mất ô khi ghi vào `let`).
+    fn kiem_ghi_duoc(&self, id: u32, span: Span) -> R<()> {
+        if self.mutable.contains(&id) {
+            Ok(())
+        } else {
+            Err(Abort::Trap(Trap::new(
+                MISMATCH,
+                "không gán được cho `let`/tham số (chỉ `var` mới gán được, §4.1)",
+                span,
+            )))
+        }
+    }
+
     fn lvalue_set(&mut self, target: &HExpr, v: Value, span: Span) -> R<()> {
         match target {
             HExpr::Var { sym: Some(id), .. } => {
-                if !self.mutable.contains(id) {
-                    return Err(Abort::Trap(Trap::new(
-                        MISMATCH,
-                        "không gán được cho `let`/tham số (chỉ `var` mới gán được, §4.1)",
-                        span,
-                    )));
-                }
+                self.kiem_ghi_duoc(*id, span)?;
                 self.env.borrow_mut().insert(*id, v);
                 Ok(())
             }
@@ -467,4 +460,80 @@ impl<'a> Interp<'a> {
     // ---------------------------------------------------------------------
     // Mã lỗi chung
     // ---------------------------------------------------------------------
+}
+
+/// **ST-317a F1** — bằng chứng `Record` **ghi tại chỗ O(1)** qua `tach_o` (đường `r.f = v`).
+///
+/// Trước F1 `ptr_rc` chỉ nhận `Map`/`List`, nên ô `Record` không bao giờ được tách khỏi `Rc`:
+/// `Rc::make_mut` luôn thấy `strong_count >= 2` và chép sâu toàn bộ trường. Test so **con trỏ
+/// `Rc`** trước/sau khi ghi: không chia sẻ ⇒ **cùng** con trỏ (in-place); có alias ⇒ con trỏ mới
+/// và alias giữ bản cũ.
+#[cfg(test)]
+mod tests_f1_record_in_place {
+    use super::*;
+
+    fn ptr(v: &Value) -> *const () {
+        match v {
+            Value::Record(r) => Rc::as_ptr(r) as *const (),
+            _ => panic!("phải là Record"),
+        }
+    }
+
+    fn rec() -> Value {
+        Value::record(
+            "P",
+            vec![("x".into(), Value::Int(1)), ("y".into(), Value::Int(2))],
+        )
+    }
+
+    fn interp_moi() -> (Hir, Symbols, TypeTable) {
+        (Hir::default(), Symbols::default(), TypeTable::default())
+    }
+
+    #[test]
+    fn tach_o_ghi_tai_cho_khi_khong_chia_se() {
+        let (hir, sym, ty) = interp_moi();
+        let mut it = Interp::new(&hir, &sym, &ty);
+        let r = rec();
+        let truoc = ptr(&r);
+        it.env.borrow_mut().insert(7, r.clone());
+        let mut base = r.clone();
+        drop(r); // còn đúng env[7] + base ⇒ tách ô xong strong_count == 1
+
+        assert!(it.tach_o(7, &base), "ô đích cùng Rc phải được tách");
+        assert!(
+            it.env.borrow().get(&7).expect("ô 7").is_unit(),
+            "ô tạm là Unit trong lúc ghi"
+        );
+        gan_truong(&mut base, "x", Value::Int(9), Span::new(0, 0)).expect("ghi trường");
+        assert_eq!(
+            ptr(&base),
+            truoc,
+            "không chia sẻ: phải ghi tại chỗ (cùng Rc)"
+        );
+        it.tra_o(7, &base, true);
+        assert_eq!(ptr(it.env.borrow().get(&7).expect("ô 7")), truoc);
+        assert_eq!(base.show(), "P(x: 9, y: 2)");
+    }
+
+    #[test]
+    fn tach_o_alias_giu_ban_cu() {
+        let (hir, sym, ty) = interp_moi();
+        let mut it = Interp::new(&hir, &sym, &ty);
+        let r = rec();
+        let truoc = ptr(&r);
+        it.env.borrow_mut().insert(7, r.clone()); // var a
+        it.env.borrow_mut().insert(8, r.clone()); // var b = a (alias)
+        let mut base = r.clone();
+        drop(r);
+
+        assert!(it.tach_o(7, &base), "ô đích cùng Rc phải được tách");
+        gan_truong(&mut base, "x", Value::Int(9), Span::new(0, 0)).expect("ghi trường");
+        let sau = ptr(&base);
+        assert_ne!(sau, truoc, "còn alias ⇒ CoW: phải là Rc mới");
+        let b = it.env.borrow().get(&8).expect("ô 8").clone();
+        assert_eq!(ptr(&b), truoc, "alias `b` phải giữ nguyên Rc cũ");
+        assert_eq!(b.show(), "P(x: 1, y: 2)", "alias `b` phải giữ bản cũ");
+        assert_eq!(base.show(), "P(x: 9, y: 2)");
+    }
 }

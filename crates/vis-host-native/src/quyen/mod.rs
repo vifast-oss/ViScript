@@ -311,16 +311,7 @@ impl Quyen {
     pub fn gia_tri(&self) -> Vec<(u32, Value)> {
         self.moc
             .iter()
-            .map(|c| {
-                (
-                    c.pos,
-                    Value::Cap {
-                        kind: c.kind.clone(),
-                        root: c.root.clone(),
-                        write: c.write,
-                    },
-                )
-            })
+            .map(|c| (c.pos, Value::cap(c.kind.clone(), c.root.clone(), c.write)))
             .collect()
     }
 

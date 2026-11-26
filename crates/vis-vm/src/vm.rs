@@ -24,15 +24,6 @@ use crate::vm_frame::MethodLoop;
 /// **VD-267** — cặp `(tên enum, tên biến thể)` đã nội bộ hoá cho cache `MakeEnum`.
 type EnumTag = (value::Name, value::Name);
 
-/// **ST-316a** — con trỏ `Rc` bên trong `Map`/`List` (nhận diện ô chia sẻ, không chép dữ liệu).
-fn ptr_rc(v: &Value) -> Option<*const ()> {
-    match v {
-        Value::Map(k) => Some(Rc::as_ptr(k) as *const ()),
-        Value::List(x) => Some(Rc::as_ptr(x) as *const ()),
-        _ => None,
-    }
-}
-
 /// Chạy một module VBC1 (đường tắt tiện dụng).
 pub fn run(m: &Module, text: &str, args: &[String]) -> RunOutput {
     Vm::new(m, text).run(args)
@@ -587,7 +578,7 @@ impl<'m> Th<'m> {
     /// biến khác đang chia sẻ cùng map vẫn giữ bản cũ (ngữ nghĩa giá trị), còn biến không chia sẻ
     /// thì `Rc::make_mut` thấy `strong_count == 1` và cập nhật **tại chỗ O(1)**, 0 đổi VBC1.
     pub(crate) fn tach_dich(&mut self, vm: &mut Vm<'_>, base: &Value) -> Option<(u8, usize)> {
-        let ptr = ptr_rc(base)?;
+        vis_runtime::value_ops::ptr_rc(base)?;
         let ke = self.f().code.get(self.frames.last()?.pc).copied();
         let s = match ke {
             Some(Instr::Assign(s)) | Some(Instr::StoreLocal(s)) => s as usize,
@@ -596,20 +587,19 @@ impl<'m> Th<'m> {
         let base_global = GLOBAL_SLOT_BASE as usize;
         if s >= base_global {
             let i = s - base_global;
-            let o = vm.globals.get(i)?;
-            if o.as_ref().and_then(ptr_rc) == Some(ptr) {
-                vm.globals[i] = None;
+            let o = vm.globals.get_mut(i)?.as_mut()?;
+            // **ST-317a F2 (P3b)**: dùng chung `tach_neu_cung_rc` (không tự so pointer).
+            if vis_runtime::value_ops::tach_neu_cung_rc(o, base) {
                 return Some((2, i));
             }
             return None;
         }
         let fr = self.frames.last_mut()?;
-        match fr.locals.get(s).and_then(ptr_rc) {
-            Some(p) if p == ptr => {
-                fr.locals[s] = Value::Unit;
-                Some((0, s))
-            }
-            _ => None,
+        let slot = fr.locals.get_mut(s)?;
+        if vis_runtime::value_ops::tach_neu_cung_rc(slot, base) {
+            Some((0, s))
+        } else {
+            None
         }
     }
 

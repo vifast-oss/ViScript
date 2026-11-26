@@ -12,7 +12,7 @@ fn o_int(rows: &[Vec<Value>]) -> i64 {
     assert_eq!(rows.len(), 1, "phải có đúng 1 hàng: {rows:?}");
     let row = &rows[0];
     assert_eq!(row.len(), 1, "phải có đúng 1 ô: {row:?}");
-    let Value::Enum(e, v, args) = &row[0] else {
+    let Some((e, v, args)) = row[0].as_enum() else {
         panic!("ô không phải enum: {row:?}")
     };
     assert_eq!(e, "SqlValue");

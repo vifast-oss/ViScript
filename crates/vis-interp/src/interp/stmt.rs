@@ -3,7 +3,94 @@
 //! Chuyển **nguyên văn**, không đổi ngữ nghĩa.
 
 use super::*;
+/// **ST-317a F1** — `e` là chính biến `id` (`HExpr::Var`).
+fn cung_bien(e: &HExpr, id: u32) -> bool {
+    matches!(e, HExpr::Var { sym: Some(gid), .. } if *gid == id)
+}
+
 impl<'a> Interp<'a> {
+    /// **ST-317a F1/F2** — `r = r with f: v` (đích và gốc **cùng** biến): ghi tại chỗ `O(1)`.
+    ///
+    /// VM đã làm việc này tự động: `Instr::With` gọi `tach_dich` trước khi áp nên
+    /// `Rc::make_mut` thấy `strong_count == 1`. Interp đánh giá `with` như **biểu thức**
+    /// (clone khỏi ô) nên trước F1 luôn chép sâu; ở đây đánh giá gốc + vế phải **trước**
+    /// (đúng thứ tự quan sát), rồi **rút ô đích** và áp qua `value_ops::voi` (cùng nguồn với
+    /// VM). Alias còn sống ⇒ `strong_count >= 2` ⇒ `make_mut` tự CoW, bản cũ không đổi.
+    ///
+    /// **F2 (P1 audit `cd7325b6`)**: bookkeeping phải **y hệt** đường `HExpr::With` thường —
+    /// `lvalue_get` (kiểm ô, không charge) → `vao_expr` của nút `With` (`steps`, `worker_tick`,
+    /// `E_EXPR`) → eval base/trường (mỗi nút tự charge) → `E_ASSIGN` → `lvalue_set`. Trước F2
+    /// fast-path bỏ `E_EXPR`/`steps`/`worker_tick` của nút `With`, nên interp rẻ hơn VM 1 đơn vị
+    /// mỗi vòng và lệch ngưỡng `--max-budget` (interp 0, VM `VS0510`).
+    ///
+    /// Fast-path **luôn** xử lý (không fallback) khi đích và gốc cùng biến; mọi nhánh lỗi trả
+    /// đúng chuỗi/`span` như `HExpr::With`/`HStmt::Assign` cũ.
+    fn gan_with_tai_cho(&mut self, target: &HExpr, id: u32, value: &HExpr, span: Span) -> R<()> {
+        let HExpr::With {
+            base,
+            fields,
+            span: wspan,
+        } = value
+        else {
+            unreachable!("chỗ gọi đã khớp `HExpr::With`")
+        };
+        let wspan = *wspan;
+        // (1) `lvalue_get(HExpr::Var)` của đường thường: chỉ kiểm ô, không charge/steps.
+        if !self.env.borrow().contains_key(&id) {
+            return Err(Abort::Trap(Trap::new(
+                RT,
+                "tên chưa có giá trị",
+                target.span(),
+            )));
+        }
+        // (2) prologue nút `With` — **dùng chung** với `Interp::eval` (F2).
+        if let Some(a) = self.vao_expr(value) {
+            return Err(a);
+        }
+        // (3) `HExpr::With`: eval base rồi từng trường (mỗi nút tự `steps`/charge).
+        let b = self.eval(base)?;
+        let Value::Record(rec) = &b else {
+            return Err(Abort::Trap(Trap::new(
+                RT,
+                format!("`with` cần bản ghi, được `{}`", b.show()),
+                wspan,
+            )));
+        };
+        let rec_id = self.rec_id_tinh(base, &b);
+        let mut pairs = Vec::with_capacity(fields.len());
+        for (n, v) in fields {
+            let nv = self.eval(v)?;
+            let nv = self.lift_truong_ban_ghi(rec_id, n, nv);
+            if !rec.fields.iter().any(|(f, _)| f == n) {
+                return Err(Abort::Trap(Trap::new(
+                    RT,
+                    format!("bản ghi không có trường `{n}`"),
+                    wspan,
+                )));
+            }
+            pairs.push((n.clone(), nv));
+        }
+        if let Some(a) = self.charge(crate::rt::fee::FeeKind::Assign, span) {
+            return Err(a);
+        }
+        // (4) Kiểm quyền ghi **trước** khi rút ô (P3a: lỗi không làm mất ô đích).
+        self.kiem_ghi_duoc(id, span)?;
+        // (5) Rút ô đích: hết refcount từ `env` ⇒ `Rc::make_mut` ghi tại chỗ nếu không alias.
+        self.env.borrow_mut().remove(&id);
+        let mut moi = b;
+        if let Err(e) = vis_runtime::value_ops::voi(&mut moi, pairs, wspan) {
+            // Phòng thủ: `voi` không lỗi sau khi đã kiểm Record/đủ trường, nhưng trả ô như cũ.
+            self.env.borrow_mut().insert(id, moi);
+            return Err(e);
+        }
+        let moi = match self.sym_ty.get(&id) {
+            Some(t) if matches!(t, vis_hir::Type::Opt(_)) => opt_lift_maybe(moi, opt_depth_ty(t)),
+            _ => moi,
+        };
+        // (6) `lvalue_set` của đường thường (quyền ghi đã kiểm, thông điệp một nguồn).
+        self.lvalue_set(target, moi, span)
+    }
+
     pub(crate) fn exec_stmt(&mut self, s: &HStmt) -> R<Ctrl> {
         self.steps += 1;
         if let Some(a) = self.worker_tick(s.span()) {
@@ -47,12 +134,12 @@ impl<'a> Interp<'a> {
                 if let Some(e) = else_ {
                     let matched = if matches!(pat, HPat::Bind { .. }) {
                         match &v {
-                            Value::Enum(ea, va, ag)
-                                if ((ea == "Result" && va == "Ok")
-                                    || (ea == "Option" && va == "Some"))
-                                    && ag.len() == 1 =>
+                            Value::Enum(e)
+                                if ((e.enum_name == "Result" && e.variant == "Ok")
+                                    || (e.enum_name == "Option" && e.variant == "Some"))
+                                    && e.args.len() == 1 =>
                             {
-                                let payload = ag[0].clone();
+                                let payload = e.args.get(0).expect("độ dài 1").clone();
                                 self.bind_pat(pat, &payload);
                                 true
                             }
@@ -114,6 +201,16 @@ impl<'a> Interp<'a> {
                 // (nạp ô → chỉ số → giá trị) và kết quả **ghi lại ô** (giá trị, không aliasing).
                 // Chỉ `=`; gán ghép trên trường/phần tử đã bị tyck chặn trước.
                 if matches!(op, AssignOp::Set) {
+                    // **ST-317a F1**: `r = r with f: v` — tách ô đích trước khi áp để `Record`
+                    // ghi tại chỗ `O(1)` (cùng cơ chế handoff với VM `Instr::With`).
+                    if let HExpr::Var { sym: Some(id), .. } = target {
+                        if let HExpr::With { base, .. } = value {
+                            if cung_bien(base, *id) {
+                                self.gan_with_tai_cho(target, *id, value, *span)?;
+                                return Ok(Ctrl::Normal);
+                            }
+                        }
+                    }
                     match target {
                         HExpr::Field { base, name, .. } => {
                             if let HExpr::Var { sym: Some(id), .. } = &**base {

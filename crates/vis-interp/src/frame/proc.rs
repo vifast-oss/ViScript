@@ -116,12 +116,20 @@ pub(super) fn process_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: W
             let env = frame.cur().env.clone();
             let matched = if matches!(pat, HPat::Bind { .. }) {
                 match &v {
-                    Value::Enum(ea, va, ag)
-                        if ((ea == "Result" && va == "Ok") || (ea == "Option" && va == "Some"))
-                            && ag.len() == 1 =>
+                    Value::Enum(__en)
+                        if {
+                            let ea = &__en.enum_name;
+                            let va = &__en.variant;
+                            let ag = &__en.args;
+                            ((ea == "Result" && va == "Ok") || (ea == "Option" && va == "Some"))
+                                && ag.len() == 1
+                        } =>
                     {
-                        bind_pat_env(pat, &ag[0], &env);
-                        true
+                        let (_ea, _va, ag) = (&__en.enum_name, &__en.variant, &__en.args);
+                        {
+                            bind_pat_env(pat, &ag[0], &env);
+                            true
+                        }
                     }
                     _ => false,
                 }

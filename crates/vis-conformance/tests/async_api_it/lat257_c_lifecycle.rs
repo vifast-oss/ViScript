@@ -472,7 +472,7 @@ fn c8_timeout_deregisters_once_no_late_wake() {
     let r = s.frame_reactor_poll_io(ReactorOp::Read, "C1", 8, 50, span);
     match r {
         Ok(v) => assert!(
-            matches!(v, Value::Enum(_, ref variant, _) if variant == "Err"),
+            matches!(v.as_enum(), Some((_, variant, _)) if variant == "Err"),
             "phải là Err(timeout): {:?}",
             v
         ),

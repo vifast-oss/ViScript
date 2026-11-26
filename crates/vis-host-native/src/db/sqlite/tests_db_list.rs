@@ -11,24 +11,24 @@ fn mo_db(d: &mut Db) -> String {
 
 /// Đọc một cột `SqlValue` từ hàng — trả chuỗi nếu là `Text`, số nếu là `Integer`.
 fn o_text(rows: &[Vec<Value>], hang: usize, cot: usize) -> String {
-    let Value::Enum(e, v, args) = &rows[hang][cot] else {
+    let Some((e, v, args)) = rows[hang][cot].as_enum() else {
         panic!("ô không phải enum: {rows:?}");
     };
     assert_eq!(e, "SqlValue");
     assert_eq!(v, "Text");
-    let [Value::Str(s)] = args.as_slice() else {
+    let [Value::Str(s)] = args else {
         panic!("ô không phải Text(str): {rows:?}")
     };
     s.clone()
 }
 
 fn o_int(rows: &[Vec<Value>], hang: usize, cot: usize) -> i64 {
-    let Value::Enum(e, v, args) = &rows[hang][cot] else {
+    let Some((e, v, args)) = rows[hang][cot].as_enum() else {
         panic!("ô không phải enum: {rows:?}");
     };
     assert_eq!(e, "SqlValue");
     assert_eq!(v, "Integer");
-    let [Value::Int(n)] = args.as_slice() else {
+    let [Value::Int(n)] = args else {
         panic!("ô không phải Integer(int): {rows:?}")
     };
     *n

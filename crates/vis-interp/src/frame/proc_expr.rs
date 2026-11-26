@@ -28,14 +28,16 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
             let field_la_opt = optional && it.field_dich_la_opt(base, &name, &b);
             let (b, nang) = if optional {
                 match b {
-                    Value::Enum(ea, va, mut ag) if ea == "Option" => match va.as_str() {
-                        "None" => {
-                            frame.push_val(Value::none());
-                            return Ok(());
-                        }
-                        "Some" if ag.len() == 1 => (ag.pop().unwrap(), true),
-                        _ => (Value::Enum(ea, va, ag), false),
-                    },
+                    Value::Enum(e) if e.enum_name == "Option" && e.variant == "None" => {
+                        frame.push_val(Value::none());
+                        return Ok(());
+                    }
+                    Value::Enum(e) if e.enum_name == "Option"
+                        && e.variant == "Some"
+                        && e.args.len() == 1 =>
+                    {
+                        (e.args.get(0).expect("độ dài 1").clone(), true)
+                    }
                     other => (other, false),
                 }
             } else {
@@ -116,7 +118,7 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
                 out.push((n.clone(), v));
             }
             let _ = span;
-            frame.push_val(Value::Record(name, out));
+            frame.push_val(Value::record(name, out));
             Ok(())
         }
         Work::BuildEnum {
@@ -128,7 +130,7 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
             let mut vs = pop_n(frame, n)?;
             vs.reverse();
             let _ = span;
-            frame.push_val(Value::Enum(name.into(), variant.into(), vs));
+            frame.push_val(Value::enum_val(name, variant, vs));
             Ok(())
         }
         Work::ApplySome => {
@@ -141,7 +143,10 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
             vals.reverse();
             let base = frame.pop_val()?;
             match base {
-                Value::Record(name, mut cur) => {
+                Value::Record(rc) => {
+                    let (name, mut cur) = Value::Record(rc)
+                        .into_record()
+                        .expect("vừa khớp Value::Record");
                     for (n, nv) in names.into_iter().zip(vals) {
                         match cur.iter_mut().find(|(f, _)| *f == n) {
                             Some(slot) => slot.1 = nv,
@@ -154,7 +159,7 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
                             }
                         }
                     }
-                    frame.push_val(Value::Record(name, cur));
+                    frame.push_val(Value::record(name, cur));
                     Ok(())
                 }
                 other => Err(Abort::Trap(Trap::new(
@@ -782,19 +787,21 @@ pub(super) fn process<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, w: Work<'
         Work::ApplyTry { span } => {
             let v = frame.pop_val()?;
             match v {
-                Value::Enum(ref ea, ref va, ref ag) if ea == "Option" && va == "Some" => {
-                    frame.push_val(ag.first().cloned().unwrap_or(Value::Unit));
-                }
-                Value::Enum(ref ea, ref va, ref ag) if ea == "Result" && va == "Ok" => {
-                    frame.push_val(ag.first().cloned().unwrap_or(Value::Unit));
-                }
-                Value::Enum(ea, va, ag)
-                    if (ea == "Option" && va == "None") || (ea == "Result" && va == "Err") =>
+                Value::Enum(e)
+                    if e.enum_name == "Option" && e.variant == "Some" && e.args.len() == 1 =>
                 {
+                    frame.push_val(e.args.get(0).expect("độ dài 1").clone());
+                }
+                Value::Enum(e)
+                    if e.enum_name == "Result" && e.variant == "Ok" && e.args.len() == 1 =>
+                {
+                    frame.push_val(e.args.get(0).expect("độ dài 1").clone());
+                }
+                Value::Enum(e) => {
                     // Trả sớm từ khung hiện tại (khớp `Instr::Try` của VM): bỏ mọi
                     // continuation còn lại của khung ⇒ side-effect sau `?` KHÔNG chạy.
                     let cf = frame.cur();
-                    cf.last = Some(Value::Enum(ea, va, ag));
+                    cf.last = Some(Value::Enum(e));
                     cf.work.clear();
                     cf.loops.clear();
                 }

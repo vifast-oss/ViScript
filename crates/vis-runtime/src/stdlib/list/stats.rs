@@ -642,14 +642,14 @@ pub(crate) mod mapcontainskey {
 
             // Bản ghi: so theo trường, không theo thứ tự khai báo.
             let m = VisMap::from_pairs(vec![(
-                Value::Record(
-                    "P".into(),
+                Value::record(
+                    "P",
                     vec![("x".into(), Value::Int(1)), ("y".into(), Value::Int(2))],
                 ),
                 Value::Int(1),
             )]);
-            let k = Value::Record(
-                "P".into(),
+            let k = Value::record(
+                "P",
                 vec![("y".into(), Value::Int(2)), ("x".into(), Value::Int(1))],
             );
             assert!(co(&m, &k));

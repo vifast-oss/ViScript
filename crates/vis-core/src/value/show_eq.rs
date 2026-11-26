@@ -33,7 +33,8 @@ impl Value {
                     .collect();
                 format!("{{{}}}", body.join(", "))
             }
-            Value::Record(name, fields) => {
+            Value::Record(r) => {
+                let (name, fields) = (&r.name, &r.fields);
                 // **VD-222 (điểm 4)** — bản ghi `Error` dựng sẵn in **thanh gọn** = chỉ `{message}`
                 // để các ca `Err(e): print(e)` byte-identical với thời `err(str)`; `source`/`span`
                 // vẫn hiện khi in đủ (`{e.message}`) hoặc in bằng `{e}` khi cần đầy đủ.
@@ -54,12 +55,12 @@ impl Value {
                     format!("{name}({})", body.join(", "))
                 }
             }
-            Value::Enum(_, variant, args) => {
-                if args.is_empty() {
-                    variant.to_string()
+            Value::Enum(e) => {
+                if e.args.is_empty() {
+                    e.variant.to_string()
                 } else {
-                    let body: Vec<String> = args.iter().map(Value::show).collect();
-                    format!("{variant}({})", body.join(", "))
+                    let body: Vec<String> = e.args.iter().map(Value::show).collect();
+                    format!("{}({})", e.variant, body.join(", "))
                 }
             }
             // **VD-204 (1)**: `Option`/`Result` in cùng luật với mọi biến thể enum (`Enum`).
@@ -79,11 +80,11 @@ impl Value {
             Value::Vm(_) => "<fn>".to_string(),
             Value::Task(_) => "<tác vụ>".to_string(),
             Value::Chan(_) => "<kênh>".to_string(),
-            Value::Cap { kind, root, .. } => {
-                if root.is_empty() {
-                    format!("<cap[{kind}]>")
+            Value::Cap(c) => {
+                if c.root.is_empty() {
+                    format!("<cap[{}]>", c.kind)
                 } else {
-                    format!("<cap[{kind}] {root}>")
+                    format!("<cap[{}] {}>", c.kind, c.root)
                 }
             }
         }
@@ -126,7 +127,8 @@ impl Value {
                     }
                 }
             }
-            (Value::Record(_ta, a), Value::Record(_tb, b)) => {
+            (Value::Record(ra), Value::Record(rb)) => {
+                let (a, b) = (&ra.fields, &rb.fields);
                 if a.len() != b.len() {
                     return false;
                 }
@@ -145,13 +147,13 @@ impl Value {
                         .all(|(n, v)| b.iter().any(|(n2, v2)| n == n2 && v.eq_value(v2)))
                 }
             }
-            (Value::Enum(ea, va, aa), Value::Enum(eb, vb, ab)) => {
+            (Value::Enum(a), Value::Enum(b)) => {
                 // **VD-204 (1)**: so khớp **cả tên enum** — `Option.Some(5)` ≠ `Foo.Some(5)`
                 // (tránh nhập nhằng sau khi gộp `Opt`/`Res` vào `Enum`).
-                ea == eb
-                    && va == vb
-                    && aa.len() == ab.len()
-                    && aa.iter().zip(ab).all(|(x, y)| x.eq_value(y))
+                a.enum_name == b.enum_name
+                    && a.variant == b.variant
+                    && a.args.len() == b.args.len()
+                    && a.args.iter().zip(b.args.iter()).all(|(x, y)| x.eq_value(y))
             }
             _ => false,
         }

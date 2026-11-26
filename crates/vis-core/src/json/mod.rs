@@ -305,13 +305,13 @@ impl<'a> P<'a> {
 /// `Value::Map`, `Value::List`, `Value::none()`…) như `decode` sinh ra.
 pub fn boc(v: Value) -> Value {
     match v {
-        Value::Int(n) => Value::Enum("Json".into(), "Num".into(), vec![Value::Int(n)]),
-        Value::Float(f) => Value::Enum("Json".into(), "Num".into(), vec![Value::Float(f)]),
-        Value::Bool(b) => Value::Enum("Json".into(), "Bool".into(), vec![Value::Bool(b)]),
-        Value::Str(s) => Value::Enum("Json".into(), "Str".into(), vec![Value::Str(s)]),
-        Value::List(xs) => Value::Enum(
-            "Json".into(),
-            "Arr".into(),
+        Value::Int(n) => Value::enum_val("Json", "Num", vec![Value::Int(n)]),
+        Value::Float(f) => Value::enum_val("Json", "Num", vec![Value::Float(f)]),
+        Value::Bool(b) => Value::enum_val("Json", "Bool", vec![Value::Bool(b)]),
+        Value::Str(s) => Value::enum_val("Json", "Str", vec![Value::Str(s)]),
+        Value::List(xs) => Value::enum_val(
+            "Json",
+            "Arr",
             vec![Value::list(
                 Rc::unwrap_or_clone(xs).into_iter().map(boc).collect(),
             )],
@@ -321,17 +321,17 @@ pub fn boc(v: Value) -> Value {
                 Ok(m) => m.into_entries(),
                 Err(rc) => rc.iter().cloned().collect(),
             };
-            Value::Enum(
-                "Json".into(),
-                "Obj".into(),
+            Value::enum_val(
+                "Json",
+                "Obj",
                 vec![Value::map(
                     entries.into_iter().map(|(k, v)| (k, boc(v))).collect(),
                 )],
             )
         }
         // `null` (cây cũ dùng `Option.None`) ⇒ biến thể `Null`.
-        Value::Enum(ea, va, _) if ea == "Option" && va == "None" => {
-            Value::Enum("Json".into(), "Null".into(), vec![])
+        Value::Enum(e) if e.enum_name == "Option" && e.variant == "None" => {
+            Value::enum_val("Json", "Null", vec![])
         }
         other => other,
     }
@@ -346,8 +346,8 @@ pub fn co_so_phi_huu_han(v: &Value) -> bool {
         Value::Map(kv) => kv
             .iter()
             .any(|(k, val)| co_so_phi_huu_han(k) || co_so_phi_huu_han(val)),
-        Value::Record(_, fs) => fs.iter().any(|(_, x)| co_so_phi_huu_han(x)),
-        Value::Enum(_, _, args) => args.iter().any(co_so_phi_huu_han),
+        Value::Record(r) => r.fields.iter().any(|(_, x)| co_so_phi_huu_han(x)),
+        Value::Enum(e) => e.args.iter().any(co_so_phi_huu_han),
         _ => false,
     }
 }
@@ -514,7 +514,8 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
             out.push('}');
         }
         // Bản ghi `Error` dựng sẵn (VD-222 điểm 4): in JSON `{"message": …, …}`.
-        Value::Record(name, fs) if name == "Error" => {
+        Value::Record(r) if r.name == "Error" => {
+            let fs = &r.fields;
             let trong: std::collections::BTreeMap<&str, &Value> =
                 fs.iter().map(|(n, v)| (n.as_str(), v)).collect();
             out.push('{');
@@ -538,7 +539,8 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
             dong(pretty, depth, out);
             out.push('}');
         }
-        Value::Record(_, fs) => {
+        Value::Record(r) => {
+            let fs = &r.fields;
             out.push('{');
             for (i, (f, val)) in fs.iter().enumerate() {
                 if i > 0 {
@@ -556,101 +558,105 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
         }
         // **VD-204 (1)**: `Option`/`Result` thật — biến thể dựng sẵn của enum `Option`/`Result`.
         // `None` ⇒ `null`; `Some(x)` ⇒ encode `x`; `Result` ⇒ `{"ok": v}` / `{"err": e}`.
-        Value::Enum(ea, va, ag) if ea == "Option" && va == "None" => out.push_str("null"),
-        Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1 => {
-            json_tai(&ag[0], pretty, depth, out)
+        Value::Enum(e) if e.enum_name == "Option" && e.variant == "None" => out.push_str("null"),
+        Value::Enum(e) if e.enum_name == "Option" && e.variant == "Some" && e.args.len() == 1 => {
+            json_tai(e.args.get(0).expect("độ dài 1"), pretty, depth, out)
         }
-        Value::Enum(ea, va, ag) if ea == "Result" && va == "Ok" && ag.len() == 1 => {
+        Value::Enum(e) if e.enum_name == "Result" && e.variant == "Ok" && e.args.len() == 1 => {
             out.push('{');
             mo(pretty, depth, out);
             viet_chuoi("ok", out);
             out.push_str(if pretty { ": " } else { ":" });
-            json_tai(&ag[0], pretty, depth + 1, out);
+            json_tai(e.args.get(0).expect("độ dài 1"), pretty, depth + 1, out);
             dong(pretty, depth, out);
             out.push('}');
         }
-        Value::Enum(ea, va, ag) if ea == "Result" && va == "Err" && ag.len() == 1 => {
+        Value::Enum(e) if e.enum_name == "Result" && e.variant == "Err" && e.args.len() == 1 => {
             out.push('{');
             mo(pretty, depth, out);
             viet_chuoi("err", out);
             out.push_str(if pretty { ": " } else { ":" });
-            json_tai(&ag[0], pretty, depth + 1, out);
+            json_tai(e.args.get(0).expect("độ dài 1"), pretty, depth + 1, out);
             dong(pretty, depth, out);
             out.push('}');
         }
         // **VD-222 (điểm 4)** — `Json` enum thật: in đúng JSON cho cả 6 biến thể.
-        Value::Enum(ea, va, ag) if ea == "Json" => match va.as_str() {
-            "Null" => out.push_str("null"),
-            "Bool" => {
-                if matches!(ag.first(), Some(Value::Bool(true))) {
-                    out.push_str("true");
-                } else {
-                    out.push_str("false");
-                }
-            }
-            "Num" => match ag.first() {
-                Some(Value::Int(n)) => out.push_str(&n.to_string()),
-                Some(Value::Float(f)) => {
-                    if f.is_finite() {
-                        out.push_str(&crate::json::float_json(*f));
+        Value::Enum(e) if e.enum_name == "Json" => {
+            let ag = e.args.as_slice();
+            match e.variant.as_str() {
+                "Null" => out.push_str("null"),
+                "Bool" => {
+                    if matches!(ag.first(), Some(Value::Bool(true))) {
+                        out.push_str("true");
                     } else {
-                        out.push_str("null");
+                        out.push_str("false");
+                    }
+                }
+                "Num" => match ag.first() {
+                    Some(Value::Int(n)) => out.push_str(&n.to_string()),
+                    Some(Value::Float(f)) => {
+                        if f.is_finite() {
+                            out.push_str(&crate::json::float_json(*f));
+                        } else {
+                            out.push_str("null");
+                        }
+                    }
+                    _ => out.push_str("null"),
+                },
+                "Str" => {
+                    if let Some(Value::Str(t)) = ag.first() {
+                        viet_chuoi(t, out);
+                    } else {
+                        out.push_str("\"\"");
+                    }
+                }
+                "Arr" => {
+                    if let Some(Value::List(xs)) = ag.first() {
+                        out.push('[');
+                        for (i, x) in xs.iter().enumerate() {
+                            if i > 0 {
+                                out.push(',');
+                            }
+                            mo(pretty, depth, out);
+                            json_tai(x, pretty, depth + 1, out);
+                        }
+                        if !xs.is_empty() {
+                            dong(pretty, depth, out);
+                        }
+                        out.push(']');
+                    } else {
+                        out.push_str("[]");
+                    }
+                }
+                "Obj" => {
+                    if let Some(Value::Map(kv)) = ag.first() {
+                        out.push('{');
+                        for (i, (k, val)) in kv.iter().enumerate() {
+                            if i > 0 {
+                                out.push(',');
+                            }
+                            mo(pretty, depth, out);
+                            let kk = match k {
+                                Value::Str(t) | Value::Path(t) => t.clone(),
+                                other => other.show(),
+                            };
+                            viet_chuoi(&kk, out);
+                            out.push_str(if pretty { ": " } else { ":" });
+                            json_tai(val, pretty, depth + 1, out);
+                        }
+                        if !kv.is_empty() {
+                            dong(pretty, depth, out);
+                        }
+                        out.push('}');
+                    } else {
+                        out.push_str("{}");
                     }
                 }
                 _ => out.push_str("null"),
-            },
-            "Str" => {
-                if let Some(Value::Str(t)) = ag.first() {
-                    viet_chuoi(t, out);
-                } else {
-                    out.push_str("\"\"");
-                }
             }
-            "Arr" => {
-                if let Some(Value::List(xs)) = ag.first() {
-                    out.push('[');
-                    for (i, x) in xs.iter().enumerate() {
-                        if i > 0 {
-                            out.push(',');
-                        }
-                        mo(pretty, depth, out);
-                        json_tai(x, pretty, depth + 1, out);
-                    }
-                    if !xs.is_empty() {
-                        dong(pretty, depth, out);
-                    }
-                    out.push(']');
-                } else {
-                    out.push_str("[]");
-                }
-            }
-            "Obj" => {
-                if let Some(Value::Map(kv)) = ag.first() {
-                    out.push('{');
-                    for (i, (k, val)) in kv.iter().enumerate() {
-                        if i > 0 {
-                            out.push(',');
-                        }
-                        mo(pretty, depth, out);
-                        let kk = match k {
-                            Value::Str(t) | Value::Path(t) => t.clone(),
-                            other => other.show(),
-                        };
-                        viet_chuoi(&kk, out);
-                        out.push_str(if pretty { ": " } else { ":" });
-                        json_tai(val, pretty, depth + 1, out);
-                    }
-                    if !kv.is_empty() {
-                        dong(pretty, depth, out);
-                    }
-                    out.push('}');
-                } else {
-                    out.push_str("{}");
-                }
-            }
-            _ => out.push_str("null"),
-        },
-        Value::Enum(_, var, args) => {
+        }
+        Value::Enum(e) => {
+            let (var, args) = (&e.variant, &e.args);
             out.push('{');
             mo(pretty, depth, out);
             viet_chuoi("variant", out);
@@ -662,7 +668,7 @@ fn json_tai(v: &Value, pretty: bool, depth: usize, out: &mut String) {
             out.push_str(if pretty { ": " } else { ":" });
             match args.len() {
                 0 => out.push_str("null"),
-                1 => json_tai(&args[0], pretty, depth + 1, out),
+                1 => json_tai(args.get(0).expect("độ dài 1"), pretty, depth + 1, out),
                 _ => {
                     out.push('[');
                     for (i, a) in args.iter().enumerate() {

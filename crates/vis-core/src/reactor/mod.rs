@@ -205,7 +205,7 @@ pub fn frame_net_write_timeout() -> i64 {
 /// thành `Ok(())`, giữ nguyên `Err` (hợp đồng số byte/lỗi KHÔNG đổi).
 pub fn frame_unit_result(v: Value) -> Value {
     match &v {
-        Value::Enum(ea, va, ag) if ea == "Result" && va == "Ok" && ag.len() == 1 => {
+        Value::Enum(e) if e.enum_name == "Result" && e.variant == "Ok" && e.args.len() == 1 => {
             Value::ok(Value::Unit)
         }
         _ => v,

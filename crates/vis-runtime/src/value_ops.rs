@@ -17,7 +17,7 @@
 use std::rc::Rc;
 
 use vis_core::trap::{Abort, Trap, R};
-use vis_core::value::{Name, Value};
+use vis_core::value::Value;
 use vis_syntax::Span;
 
 use crate::codes::{IDX, RT};
@@ -29,6 +29,36 @@ use crate::codes::{IDX, RT};
 pub enum Buoc {
     Truong(String),
     ChiSo(Value),
+}
+
+/// **ST-317a F1** — con trỏ `Rc` nội bộ của **Map/List/Record** — nhận diện ô chia sẻ
+/// (không chép dữ liệu).
+///
+/// Là **một nguồn** cho cả `vis-interp` (`Interp::tach_o`) và `vis-vm` (`Th::tach_dich`);
+/// trước F1 chỉ có `Map`/`List` nên `Record` luôn bị `Rc::make_mut` chép sâu mỗi lần ghi.
+pub fn ptr_rc(v: &Value) -> Option<*const ()> {
+    match v {
+        Value::Map(m) => Some(Rc::as_ptr(m) as *const ()),
+        Value::List(l) => Some(Rc::as_ptr(l) as *const ()),
+        Value::Record(r) => Some(Rc::as_ptr(r) as *const ()),
+        _ => None,
+    }
+}
+
+/// **ST-317a F1** — tạm tách ô `o` khỏi `Rc` **khi** ô còn trỏ cùng giá trị với `base`
+/// (ô = `Unit` trong lúc ghi). Nhờ đó `Rc::make_mut` thấy `strong_count == 1` và cập nhật
+/// **tại chỗ O(1)**; trả `true` nếu đã tách để chỗ gọi khôi phục ô sau khi ghi.
+///
+/// Ô **không** chia sẻ với `base` (ví dụ biến alias `b = a`) trả `false` và giữ nguyên —
+/// đúng ngữ nghĩa giá trị: chỉ ô đích bị tách, alias vẫn giữ bản cũ.
+pub fn tach_neu_cung_rc(o: &mut Value, base: &Value) -> bool {
+    if let (Some(a), Some(b)) = (ptr_rc(o), ptr_rc(base)) {
+        if a == b {
+            *o = Value::Unit;
+            return true;
+        }
+    }
+    false
 }
 
 fn loi_truong(name: &str, span: Span) -> Abort {
@@ -45,20 +75,21 @@ pub fn truong(v: &Value, name: &str, span: Span) -> R<Value> {
         return truong(x, name, span);
     }
     match v {
-        Value::Record(_, fs) => fs
+        Value::Record(r) => r
+            .fields
             .iter()
             .find(|(k, _)| k == name)
             .map(|(_, v)| v.clone())
             .ok_or_else(|| loi_truong(name, span)),
         // **VD-267/VD-204**: enum bộ số (`e.0`) và atom (`e.Ten`) — hợp nhất hành vi hai engine.
-        Value::Enum(en, variant, args) => {
+        Value::Enum(e) => {
             if let Ok(i) = name.parse::<usize>() {
-                return args.get(i).cloned().ok_or_else(|| {
+                return e.args.get(i).cloned().ok_or_else(|| {
                     Abort::Trap(Trap::new(RT, format!("không có đối số thứ {i}"), span))
                 });
             }
-            if variant.is_empty() && args.is_empty() {
-                return Ok(Value::Enum(en.clone(), Name::new(name), Vec::new()));
+            if e.variant.is_empty() && e.args.is_empty() {
+                return Ok(Value::enum_val(e.enum_name.clone(), name, Vec::new()));
             }
             Err(Abort::Trap(Trap::new(
                 RT,
@@ -78,24 +109,35 @@ pub fn truong(v: &Value, name: &str, span: Span) -> R<Value> {
 /// mới, còn lại cùng thông điệp `VS0501` với [`truong`].
 pub fn doc_truong(b: Value, name: &str, span: Span) -> R<Value> {
     match b {
-        Value::Record(_, fields) => fields
-            .into_iter()
-            .find(|(n, _)| n == name)
-            .map(|(_, v)| v)
-            .ok_or_else(|| loi_truong(name, span)),
+        Value::Record(rc) => {
+            let fields = match Rc::try_unwrap(rc) {
+                Ok(r) => r.fields,
+                Err(rc) => rc.fields.clone(),
+            };
+            fields
+                .into_iter()
+                .find(|(n, _)| n == name)
+                .map(|(_, v)| v)
+                .ok_or_else(|| loi_truong(name, span))
+        }
         // **VD-204 (1)**: `Some(v)` truy cập trường như `v`.
-        Value::Enum(ea, va, args) if ea == "Option" && va == "Some" && args.len() == 1 => {
-            let mut args = args;
+        Value::Enum(e) if e.enum_name == "Option" && e.variant == "Some" && e.args.len() == 1 => {
+            let Some((_, _, mut args)) = (Value::Enum(e)).into_enum() else {
+                unreachable!("vừa khớp Value::Enum")
+            };
             doc_truong(args.pop().expect("Some luôn có một đối số"), name, span)
         }
-        Value::Enum(en, variant, args) => {
+        Value::Enum(e) => {
+            let Some((en, variant, args)) = (Value::Enum(e)).into_enum() else {
+                unreachable!("vừa khớp Value::Enum")
+            };
             if let Ok(i) = name.parse::<usize>() {
                 return args.into_iter().nth(i).ok_or_else(|| {
                     Abort::Trap(Trap::new(RT, format!("không có đối số thứ {i}"), span))
                 });
             }
             if variant.is_empty() && args.is_empty() {
-                Ok(Value::Enum(en, Name::new(name), Vec::new()))
+                Ok(Value::enum_val(en, name, Vec::new()))
             } else {
                 Err(Abort::Trap(Trap::new(
                     RT,
@@ -196,17 +238,20 @@ pub fn dat(base: &mut Value, idx: &Value, v: Value, span: Span) -> R<()> {
 /// `x.f = v` — sửa **tại chỗ** đúng trường đã có; thiếu trường ⇒ `VS0501`.
 pub fn dat_truong(base: &mut Value, name: &str, v: Value, span: Span) -> R<()> {
     match base {
-        Value::Record(ten, fs) => match fs.iter_mut().find(|(k, _)| k == name) {
-            Some(slot) => {
-                slot.1 = v;
-                Ok(())
+        Value::Record(rc) => {
+            if !rc.fields.iter().any(|(k, _)| k == name) {
+                return Err(Abort::Trap(Trap::new(
+                    RT,
+                    format!("bản ghi `{}` không có trường `{name}`", rc.name),
+                    span,
+                )));
             }
-            None => Err(Abort::Trap(Trap::new(
-                RT,
-                format!("bản ghi `{ten}` không có trường `{name}`"),
-                span,
-            ))),
-        },
+            let r = Rc::make_mut(rc);
+            if let Some(slot) = r.fields.iter_mut().find(|(k, _)| k == name) {
+                slot.1 = v;
+            }
+            Ok(())
+        }
         other => Err(Abort::Trap(Trap::new(
             RT,
             format!("`with` không dùng được cho `{}`", other.show()),
@@ -217,7 +262,7 @@ pub fn dat_truong(base: &mut Value, name: &str, v: Value, span: Span) -> R<()> {
 
 /// `x with f: v, …` — kiểm **đủ** trường trước khi sửa để lỗi không để lại nửa vời.
 pub fn voi(base: &mut Value, pairs: Vec<(String, Value)>, span: Span) -> R<()> {
-    let Value::Record(ten, fs) = base else {
+    let Value::Record(rc) = base else {
         return Err(Abort::Trap(Trap::new(
             RT,
             format!("`with` không dùng được cho `{}`", base.show()),
@@ -225,16 +270,19 @@ pub fn voi(base: &mut Value, pairs: Vec<(String, Value)>, span: Span) -> R<()> {
         )));
     };
     for (k, _) in &pairs {
-        if !fs.iter().any(|(kk, _)| kk == k) {
+        if !rc.fields.iter().any(|(kk, _)| kk == k) {
             return Err(Abort::Trap(Trap::new(
                 RT,
-                format!("bản ghi `{ten}` không có trường `{k}`"),
+                format!("bản ghi `{}` không có trường `{k}`", rc.name),
                 span,
             )));
         }
     }
+    // **ST-317a**: `x with f: v` sửa **tại chỗ** khi bản ghi không chia sẻ (`strong_count == 1`
+    // sau khi engine tách ô đích); chia sẻ ⇒ CoW một lần, `b = a` vẫn giữ bản cũ.
+    let r = Rc::make_mut(rc);
     for (k, v) in pairs {
-        if let Some(e) = fs.iter_mut().find(|(kk, _)| *kk == k) {
+        if let Some(e) = r.fields.iter_mut().find(|(kk, _)| *kk == k) {
             e.1 = v;
         }
     }
@@ -269,12 +317,14 @@ pub fn gan_duong(base: &mut Value, duong: &[Buoc], v: Value, span: Span) -> R<()
     }
     // Tầng giữa: ưu tiên sửa tại chỗ (Record/List/Map); kiểu khác rơi về dựng lại như bản cũ.
     match (b, &mut *base) {
-        (Buoc::Truong(n), Value::Record(_, fs)) => {
-            let slot = fs
-                .iter_mut()
-                .find(|(k, _)| k == n)
+        (Buoc::Truong(n), Value::Record(rc)) => {
+            let i = rc
+                .fields
+                .iter()
+                .position(|(k, _)| k == n)
                 .ok_or_else(|| loi_truong(n, span))?;
-            gan_duong(&mut slot.1, rest, v, span)
+            let r = Rc::make_mut(rc);
+            gan_duong(&mut r.fields[i].1, rest, v, span)
         }
         (Buoc::ChiSo(Value::Int(i)), Value::List(xs)) if *i >= 0 && (*i as usize) < xs.len() => {
             gan_duong(&mut Rc::make_mut(xs)[*i as usize], rest, v, span)

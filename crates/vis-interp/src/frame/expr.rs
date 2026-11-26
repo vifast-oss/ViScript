@@ -36,9 +36,9 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
                     sym.and_then(|s| it.tags.get(&s).cloned())
                         .map(|(n, is_enum)| {
                             if is_enum {
-                                Value::Enum(n.into(), Name::new(""), Vec::new())
+                                Value::enum_val(n, Name::new(""), Vec::new())
                             } else {
-                                Value::Record(n, Vec::new())
+                                Value::record(n, Vec::new())
                             }
                         })
                 })
@@ -742,8 +742,8 @@ pub(super) fn call_value<'a>(
             frame.push_val(v);
             Ok(())
         }
-        Value::Record(name, fields) if fields.is_empty() => {
-            frame.push_val(Value::Record(name, named));
+        Value::Record(r) if r.fields.is_empty() => {
+            frame.push_val(Value::record(r.name.clone(), named));
             Ok(())
         }
         other => {

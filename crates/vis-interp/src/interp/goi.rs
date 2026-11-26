@@ -221,7 +221,7 @@ impl<'a> Interp<'a> {
         }
         match e {
             HExpr::Var { sym: Some(_), .. } => match root {
-                Value::Record(ten, _) => self.types.rec_by_name(ten).map(Type::Record),
+                Value::Record(r) => self.types.rec_by_name(&r.name).map(Type::Record),
                 _ => None,
             },
             HExpr::Field { base, name, .. } => {
@@ -250,7 +250,11 @@ impl<'a> Interp<'a> {
     /// `None` (field thường nhưng giá trị bất thường — giữ tương thích `lift_opt`).
     pub(crate) fn field_dich_la_opt(&self, base: &HExpr, name: &str, raw: &Value) -> bool {
         let root = match raw {
-            Value::Enum(ea, va, ag) if ea == "Option" && va == "Some" && ag.len() == 1 => &ag[0],
+            Value::Enum(e)
+                if e.enum_name == "Option" && e.variant == "Some" && e.args.len() == 1 =>
+            {
+                e.args.get(0).expect("Some luôn có một đối số")
+            }
             other => other,
         };
         let Some(bt) = self.expr_ty(base, root) else {
@@ -282,11 +286,17 @@ impl<'a> Interp<'a> {
         let field_la_opt = self.field_dich_la_opt(base, name, &raw);
         let (b, nang) = if optional {
             match raw {
-                Value::Enum(ea, va, mut ag) if ea == "Option" => match va.as_str() {
-                    "None" => return Ok(Value::none()),
-                    "Some" if ag.len() == 1 => (ag.pop().expect("Some luôn có một đối số"), true),
-                    _ => (Value::Enum(ea, va, ag), false),
-                },
+                Value::Enum(e) if e.enum_name == "Option" && e.variant == "None" => {
+                    return Ok(Value::none());
+                }
+                Value::Enum(e)
+                    if e.enum_name == "Option" && e.variant == "Some" && e.args.len() == 1 =>
+                {
+                    (
+                        e.args.get(0).expect("Some luôn có một đối số").clone(),
+                        true,
+                    )
+                }
                 other => (other, false),
             }
         } else {

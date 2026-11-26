@@ -362,7 +362,7 @@ fn nan_bi_tu_choi_va_inf_roundtrip() {
     let (_, rows) = d.db_query(&h, "SELECT r FROM t ORDER BY r", &[]).unwrap();
     assert_eq!(rows.len(), 2, "{rows:?}");
     let lay = |row: &Vec<Value>| -> f64 {
-        let Value::Enum(_, _, args) = &row[0] else {
+        let Some((_, _, args)) = row[0].as_enum() else {
             panic!("ô không phải SqlValue: {row:?}")
         };
         let Value::Float(f) = &args[0] else {

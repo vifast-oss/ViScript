@@ -29,17 +29,21 @@ impl<'a> Interp<'a> {
     ) -> R<Value> {
         let raw = self.eval(base)?;
         let v = match raw {
-            Value::Enum(ea, va, mut ag) if ea == "Option" => match va.as_str() {
-                "None" => return Ok(Value::none()),
-                "Some" if ag.len() == 1 => ag.pop().expect("Some luôn có một đối số"),
-                _ => {
-                    return Err(Abort::Trap(crate::interp::Trap::new(
-                        RT,
-                        "giá trị `Option` không hợp lệ ở `?.` (VD-269)",
-                        span,
-                    )))
-                }
-            },
+            Value::Enum(e) if e.enum_name == "Option" && e.variant == "None" => {
+                return Ok(Value::none());
+            }
+            Value::Enum(e)
+                if e.enum_name == "Option" && e.variant == "Some" && e.args.len() == 1 =>
+            {
+                e.args.get(0).expect("Some luôn có một đối số").clone()
+            }
+            Value::Enum(e) if e.enum_name == "Option" => {
+                return Err(Abort::Trap(crate::interp::Trap::new(
+                    RT,
+                    "giá trị `Option` không hợp lệ ở `?.` (VD-269)",
+                    span,
+                )))
+            }
             other => {
                 return Err(Abort::Trap(crate::interp::Trap::new(
                     RT,
@@ -72,8 +76,8 @@ impl<'a> Interp<'a> {
             })
             .or_else(|| {
                 let ten: &str = match &v {
-                    Value::Record(n, _) => n.as_str(),
-                    Value::Enum(n, _, _) => n.as_ref(),
+                    Value::Record(r) => r.name.as_str(),
+                    Value::Enum(e) => e.enum_name.as_ref(),
                     _ => return None,
                 };
                 self.mret.sym_theo_ten(ten, name)

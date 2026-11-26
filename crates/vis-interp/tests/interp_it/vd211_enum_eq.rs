@@ -6,7 +6,7 @@
 use vis_core::value::Value;
 
 fn e(en: &str, va: &str, args: Vec<Value>) -> Value {
-    Value::Enum(en.into(), va.into(), args)
+    Value::enum_val(en, va, args)
 }
 
 #[test]

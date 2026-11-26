@@ -128,10 +128,10 @@ impl<'a> Interp<'a> {
         match f {
             Value::Fn(c) => self.call_closure(&c, pos, span),
             Value::Builtin(name) => crate::builtin::call(self, name, pos, span),
-            Value::Record(name, fields) if fields.is_empty() => {
+            Value::Record(r) if r.fields.is_empty() => {
                 // `User(name: "An", age: 20)` — khởi tạo bản ghi theo tên kiểu.
                 let _ = pos;
-                Ok(Value::Record(name, named))
+                Ok(Value::record(r.name.clone(), named))
             }
             other => {
                 let _ = named;

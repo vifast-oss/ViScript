@@ -225,3 +225,80 @@ fn iter_init_back_edge_khong_bac_hai_va_deadline() {
         "deadline 40ms không được chờ lâu: {dt_dl:?}"
     );
 }
+
+/// **ST-317a F1** — `Record` ghi tại chỗ qua `tach_dich` (đường `With(1)` của `r.f = v`).
+/// So con trỏ `Rc` trước/sau: không chia sẻ ⇒ cùng con trỏ; có alias ⇒ Rc mới + alias giữ bản cũ.
+#[test]
+fn record_tach_dich_ghi_tai_cho_va_alias() {
+    use vis_bytecode::{Func, Module, Span as SpanB, HASH_LEN, VERSION};
+
+    let m = Module {
+        version: VERSION,
+        source_hash: [0u8; HASH_LEN],
+        consts: vec![],
+        funcs: vec![Func {
+            name: "main".into(),
+            arity: 0,
+            nparams: 0,
+            nlocals: 1,
+            max_stack: 2,
+            code: vec![Instr::Assign(0)],
+            spans: vec![SpanB { start: 0, end: 0 }],
+        }],
+        entry: 0,
+    };
+    let mut vm = Vm::new(&m, "");
+    let rec = || {
+        Value::record(
+            "P",
+            vec![("x".into(), Value::Int(1)), ("y".into(), Value::Int(2))],
+        )
+    };
+    let ptr = |v: &Value| match v {
+        Value::Record(r) => Rc::as_ptr(r) as *const (),
+        _ => panic!("phải là Record"),
+    };
+    let ghi = |base: &mut Value| {
+        vis_runtime::value_ops::voi(base, vec![("x".into(), Value::Int(9))], Span::new(0, 0))
+            .expect("ghi trường");
+    };
+
+    // (1) Không chia sẻ: ô đích + giá trị nạp là 2 refcount, tách ô ⇒ 1 ⇒ make_mut tại chỗ.
+    let r = rec();
+    let truoc = ptr(&r);
+    let mut th = Th::new(&m, 0, vec![r.clone()], vec![]);
+    let mut base = r.clone();
+    drop(r);
+    let da = th.tach_dich(&mut vm, &base);
+    assert!(da.is_some(), "phải tách ô Record");
+    assert!(matches!(th.frames[0].locals[0], Value::Unit));
+    ghi(&mut base);
+    assert_eq!(
+        ptr(&base),
+        truoc,
+        "không chia sẻ: phải ghi tại chỗ (cùng Rc)"
+    );
+    th.tra_dich(&mut vm, &base, da);
+    assert_eq!(ptr(&th.frames[0].locals[0]), truoc);
+
+    // (2) Có alias: ô 7 = a, ô 8 = b = a ⇒ tách ô 7 vẫn còn 2 refcount ⇒ CoW.
+    let r = rec();
+    let truoc = ptr(&r);
+    let mut th = Th::new(&m, 0, vec![r.clone(), r.clone()], vec![]);
+    let mut base = r.clone();
+    drop(r);
+    let da = th.tach_dich(&mut vm, &base);
+    assert!(da.is_some(), "phải tách ô Record");
+    ghi(&mut base);
+    let sau = ptr(&base);
+    assert_ne!(sau, truoc, "còn alias ⇒ CoW: phải là Rc mới");
+    assert_eq!(
+        ptr(&th.frames[0].locals[1]),
+        truoc,
+        "alias `b` phải giữ nguyên Rc cũ"
+    );
+    assert_eq!(th.frames[0].locals[1].show(), "P(x: 1, y: 2)");
+    assert_eq!(base.show(), "P(x: 9, y: 2)");
+    th.tra_dich(&mut vm, &base, da);
+    assert_eq!(ptr(&th.frames[0].locals[0]), sau);
+}

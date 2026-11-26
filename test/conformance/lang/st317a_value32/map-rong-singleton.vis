@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# ST-317a (đóng F6 ST-315b) — `{}` dùng singleton; sửa map này không rò sang map khác.
+fn main():
+    var a: map[str, int] = {}
+    var b: map[str, int] = {}
+    a["k"] = 1
+    b["j"] = 2
+    print(a)
+    print(b)
+    print(a.len())
+    print(b.len())
+    print({} == {})
+    var c: map[str, int] = {}
+    print(c.len())

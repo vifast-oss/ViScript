@@ -5,23 +5,19 @@ use super::*;
 use rusqlite::hooks::AuthContext;
 
 fn sv_int(n: i64) -> Value {
-    Value::Enum("SqlValue".into(), "Integer".into(), vec![Value::Int(n)])
+    Value::enum_val("SqlValue", "Integer", vec![Value::Int(n)])
 }
 
 fn sv_real(f: f64) -> Value {
-    Value::Enum("SqlValue".into(), "Real".into(), vec![Value::Float(f)])
+    Value::enum_val("SqlValue", "Real", vec![Value::Float(f)])
 }
 
 fn sv_text(s: &str) -> Value {
-    Value::Enum(
-        "SqlValue".into(),
-        "Text".into(),
-        vec![Value::Str(s.to_string())],
-    )
+    Value::enum_val("SqlValue", "Text", vec![Value::Str(s.to_string())])
 }
 
 fn sv_blob(b: Vec<u8>) -> Value {
-    Value::Enum("SqlValue".into(), "Blob".into(), vec![Value::Bytes(b)])
+    Value::enum_val("SqlValue", "Blob", vec![Value::Bytes(b)])
 }
 
 fn mo_db(d: &mut Db) -> String {
@@ -32,7 +28,7 @@ fn o_int(rows: &[Vec<Value>]) -> i64 {
     assert_eq!(rows.len(), 1, "phải có đúng 1 hàng: {rows:?}");
     let row = &rows[0];
     assert_eq!(row.len(), 1, "phải có đúng 1 ô: {row:?}");
-    let Value::Enum(e, v, args) = &row[0] else {
+    let Some((e, v, args)) = row[0].as_enum() else {
         panic!("ô không phải enum: {row:?}")
     };
     assert_eq!(e, "SqlValue");

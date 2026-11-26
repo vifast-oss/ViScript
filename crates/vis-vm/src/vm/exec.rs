@@ -382,7 +382,7 @@ impl<'m> Th<'m> {
                     while let (Some(k), Some(v)) = (it.next(), it.next()) {
                         fields.push((k.show(), v));
                     }
-                    self.st.push(Value::Record(ten, fields));
+                    self.st.push(Value::record(ten, fields));
                 }
                 Instr::MakeEnum(v, n) => {
                     // **VD-267**: mỗi hằng chỉ tách + nội bộ hoá tên **một lần** (cache theo chỉ
@@ -403,7 +403,7 @@ impl<'m> Th<'m> {
                         }
                     };
                     let args = self.pop_n(vm, n as usize, span)?;
-                    self.st.push(Value::Enum(tag.0, tag.1, args));
+                    self.st.push(Value::enum_val(tag.0, tag.1, args));
                 }
                 Instr::MakeSome => {
                     let v = self.pop(vm, span)?;
@@ -560,7 +560,10 @@ impl<'m> Th<'m> {
                     // `Option`/`Result` — so khớp biến thể **phân biệt hoa thường** (interp cũng vậy;
                     // pattern viết sai hoa thường là lỗi lúc biên dịch, không bao giờ chạm VM).
                     let ok = match &v {
-                        Value::Enum(_, var, args) => *var == var_muon && args.len() == n as usize,
+                        Value::Enum(__en) => {
+                            let (_, var, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                            *var == var_muon && args.len() == n as usize
+                        }
                         _ => false,
                     };
                     self.st.push(Value::Bool(ok));
@@ -584,8 +587,8 @@ impl<'m> Th<'m> {
                 }
                 Instr::TestRecord(_, n, open) => {
                     let v = self.pop(vm, span)?;
-                    let ok =
-                        matches!(&v, Value::Record(_, fs) if fs.len() == n as usize || open != 0);
+                    let ok = matches!(&v, Value::Record(r)
+                        if r.fields.len() == n as usize || open != 0);
                     self.st.push(Value::Bool(ok));
                 }
                 Instr::TestRange(a, b, incl) => {
@@ -650,11 +653,13 @@ impl<'m> Th<'m> {
                 Instr::UnwrapOpt => {
                     let v = self.pop(vm, span)?;
                     match v {
-                        Value::Enum(ea, va, ag)
-                            if ea == "Option" && va == "Some" && ag.len() == 1 =>
+                        Value::Enum(e)
+                            if e.enum_name == "Option"
+                                && e.variant == "Some"
+                                && e.args.len() == 1 =>
                         {
-                            self.st
-                                .push(ag.into_iter().next().expect("Some luôn có một đối số"));
+                            let v = e.args.get(0).expect("Some luôn có một đối số").clone();
+                            self.st.push(v);
                         }
                         other => self.st.push(other),
                     }
@@ -662,7 +667,10 @@ impl<'m> Th<'m> {
                 Instr::Unwrap(i) => {
                     let v = self.pop(vm, span)?;
                     let x = match &v {
-                        Value::Enum(_, _, args) => args.get(i as usize).cloned(),
+                        Value::Enum(__en) => {
+                            let (_, _, args) = (&__en.enum_name, &__en.variant, &__en.args);
+                            args.get(i as usize).cloned()
+                        }
                         Value::List(xs) => xs.get(i as usize).cloned(),
                         _ => None,
                     };
@@ -679,9 +687,9 @@ impl<'m> Th<'m> {
                 Instr::Try => {
                     let v = self.pop(vm, span)?;
                     match &v {
-                        Value::Enum(ea, va, _)
-                            if (ea == "Option" && va == "None")
-                                || (ea == "Result" && va == "Err") =>
+                        Value::Enum(e)
+                            if ((e.enum_name == "Option" && e.variant == "None")
+                                || (e.enum_name == "Result" && e.variant == "Err")) =>
                         {
                             self.pop_frame(span)?;
                             match self.frames.last_mut() {
@@ -692,11 +700,12 @@ impl<'m> Th<'m> {
                                 }
                             }
                         }
-                        Value::Enum(ea, va, ag)
-                            if (ea == "Option" && va == "Some" || ea == "Result" && va == "Ok")
-                                && ag.len() == 1 =>
+                        Value::Enum(e)
+                            if ((e.enum_name == "Option" && e.variant == "Some")
+                                || (e.enum_name == "Result" && e.variant == "Ok"))
+                                && e.args.len() == 1 =>
                         {
-                            self.st.push(ag[0].clone());
+                            self.st.push(e.args.get(0).expect("độ dài 1").clone());
                         }
                         other => self.st.push(other.clone()),
                     }

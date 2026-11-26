@@ -527,11 +527,14 @@ fn bind_pat_env(pat: &HPat, v: &Value, env: &Env) -> bool {
             let name = path.last().cloned().unwrap_or_default();
             let low = name.to_ascii_lowercase();
             match v {
-                Value::Enum(_, variant, vargs) => {
-                    if variant != &name {
-                        return false;
+                Value::Enum(__en) => {
+                    let (_, variant, vargs) = (&__en.enum_name, &__en.variant, &__en.args);
+                    {
+                        if variant != &name {
+                            return false;
+                        }
+                        bind_all_env(args, vargs, env)
                     }
-                    bind_all_env(args, vargs, env)
                 }
                 Value::Bool(b) => match low.as_str() {
                     "true" => *b,
@@ -566,7 +569,8 @@ fn bind_pat_env(pat: &HPat, v: &Value, env: &Env) -> bool {
             _ => false,
         },
         HPat::Record { fields, .. } => match v {
-            Value::Record(_, vfields) => {
+            Value::Record(r) => {
+                let vfields = &r.fields;
                 for (n, sub) in fields {
                     if n.is_empty() {
                         continue;
@@ -626,10 +630,11 @@ fn bind_all_env(pats: &[HPat], vals: &[Value], env: &Env) -> bool {
 /// Truy cập trường (mirror `Interp::field_of`).
 fn field_of(b: Value, name: &str, span: Span) -> R<Value> {
     match b {
-        Value::Record(_, fields) => fields
-            .into_iter()
+        Value::Record(r) => r
+            .fields
+            .iter()
             .find(|(n, _)| n == name)
-            .map(|(_, v)| v)
+            .map(|(_, v)| v.clone())
             .ok_or_else(|| {
                 Abort::Trap(Trap::new(
                     RT,
@@ -637,12 +642,20 @@ fn field_of(b: Value, name: &str, span: Span) -> R<Value> {
                     span,
                 ))
             }),
-        Value::Enum(ea, va, args) if ea == "Option" && va == "Some" && args.len() == 1 => {
-            field_of(args.into_iter().next().unwrap(), name, span)
+        Value::Enum(e) if e.enum_name == "Option" && e.variant == "Some" && e.args.len() == 1 => {
+            field_of(
+                e.args.get(0).expect("Some luôn có một đối số").clone(),
+                name,
+                span,
+            )
         }
-        Value::Enum(en, variant, args) => {
-            if variant.is_empty() && args.is_empty() {
-                Ok(Value::Enum(en, Name::new(name), Vec::new()))
+        Value::Enum(e) => {
+            if e.variant.is_empty() && e.args.is_empty() {
+                Ok(Value::enum_val(
+                    e.enum_name.clone(),
+                    Name::new(name),
+                    Vec::new(),
+                ))
             } else {
                 Err(Abort::Trap(Trap::new(
                     RT,

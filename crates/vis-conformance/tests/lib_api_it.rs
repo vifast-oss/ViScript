@@ -33,6 +33,8 @@ mod lat258_frame_fixes;
 mod lat2_reactor;
 #[path = "async_api_it/lat3_real.rs"]
 mod lat3_real;
+#[path = "async_api_it/st317a_f2_budget.rs"]
+mod st317a_f2_budget;
 #[path = "async_api_it/vd259_frame2.rs"]
 mod vd259_frame2;
 #[path = "frame_it/vd260_frame3.rs"]

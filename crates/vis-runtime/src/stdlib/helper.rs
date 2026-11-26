@@ -152,8 +152,8 @@ pub(crate) mod chung {
     pub(crate) fn rowset_record(columns: Vec<String>, rows: Vec<Vec<Value>>) -> Value {
         let columns = Value::list(columns.into_iter().map(Value::Str).collect());
         let rows = Value::list(rows.into_iter().map(Value::list).collect());
-        Value::Record(
-            "RowSet".into(),
+        Value::record(
+            "RowSet",
             vec![("columns".into(), columns), ("rows".into(), rows)],
         )
     }
@@ -192,7 +192,7 @@ pub(crate) mod chung {
             Ty::Var(_) | Ty::Map(..) => true,
             // **VD-241**: `list[SqlValue]` (params của `std.sqlite`) — kiểm **phần tử** là `SqlValue`.
             Ty::List(inner) if **inner == Ty::SqlValue => {
-                matches!(a, Value::List(xs) if xs.iter().all(|v| matches!(v, Value::Enum(e, _, _) if e == "SqlValue")))
+                matches!(a, Value::List(xs) if xs.iter().all(|v| matches!(v.as_enum(), Some((e, _, _)) if e == "SqlValue")))
             }
             Ty::List(_) => true,
             Ty::Int => matches!(a, Value::Int(_)),
@@ -239,8 +239,8 @@ pub(crate) mod chung {
             // `sqlite.schema_sql`.
             | Ty::ResultOptStrErr => true,
             // **VD-241**: `SqlValue` tham số (chưa dùng ở vị trí đối số)/`RowSet` — kiểm runtime nếu đi qua.
-            Ty::SqlValue => matches!(a, Value::Enum(e, _, _) if e == "SqlValue"),
-            Ty::RowSet => matches!(a, Value::Record(n, _) if n == "RowSet"),
+            Ty::SqlValue => matches!(a.as_enum(), Some((e, _, _)) if e == "SqlValue"),
+            Ty::RowSet => matches!(a.as_record(), Some(r) if r.name == "RowSet"),
             // **VD-267**: `never` chỉ là kiểu **trả** của builtin trần — không kiểm đối số.
             Ty::Never => true,
         };
@@ -739,12 +739,12 @@ pub(crate) mod indexof {
             assert_eq!(tim(&xs, &can, false), Some(0));
             assert_eq!(tim(&xs, &can, true), Some(2));
 
-            let a = Value::Record(
-                "P".into(),
+            let a = Value::record(
+                "P",
                 vec![("x".into(), Value::Int(1)), ("y".into(), Value::Int(2))],
             );
-            let b = Value::Record(
-                "P".into(),
+            let b = Value::record(
+                "P",
                 vec![("y".into(), Value::Int(2)), ("x".into(), Value::Int(1))],
             );
             assert_eq!(tim(&[a], &b, false), Some(0));

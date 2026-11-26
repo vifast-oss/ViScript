@@ -21,7 +21,7 @@ use super::*;
 use rusqlite::hooks::AuthContext;
 
 fn sv_int(n: i64) -> Value {
-    Value::Enum("SqlValue".into(), "Integer".into(), vec![Value::Int(n)])
+    Value::enum_val("SqlValue", "Integer", vec![Value::Int(n)])
 }
 
 fn mo_db(d: &mut Db) -> String {
@@ -30,7 +30,7 @@ fn mo_db(d: &mut Db) -> String {
 
 fn o_int(rows: &[Vec<Value>]) -> i64 {
     assert_eq!(rows.len(), 1, "phải có đúng 1 hàng: {rows:?}");
-    let Value::Enum(e, v, args) = &rows[0][0] else {
+    let Some((e, v, args)) = rows[0][0].as_enum() else {
         panic!("ô không phải enum: {rows:?}")
     };
     assert_eq!((e.as_str(), v.as_str()), ("SqlValue", "Integer"));
@@ -139,7 +139,7 @@ fn cache_xa_khi_schema_doi_cung_handle() {
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].len(), 2);
     assert!(
-        matches!(&rows[0][1], Value::Enum(e, v, _) if e == "SqlValue" && v == "Null"),
+        matches!(rows[0][1].as_enum(), Some((e, v, _)) if e == "SqlValue" && v == "Null"),
         "cột mới NULL: {:?}",
         rows[0][1]
     );
