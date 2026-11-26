@@ -113,8 +113,8 @@ R1 **0 tệp sản phẩm > 1.000**, R8 **39/40**, 0 `unsafe`, `API-VBC1.txt` kh
 ### 2.3 Bench cuối Sóng 8 — A/B kiểm soát (không hồi quy)
 
 - **Mốc**: HEAD docs `4caa600e` (mã `ee8f252d`), binary `target/release/vis` sha256 **`a47b583e…5179be`** (`vis 0.6.0`); report `/home/ps/vislogs/final-bench-report.md` sha256 `e6a03804…737f7`; JSON `final-bench-runs5-20261126T213803Z.json` sha256 **`3ca403ff…ce953`**.
-- **Raw `--runs 3` KHÔNG dùng làm KPI**: cả 10 ô đều “chậm” nhưng do **nhiễu host** (load 2,2–5,6, governor `powersave`, P-core chia SMT, tiến trình khác). Chứng minh: dựng lại **binary nền bit-identical `77e64bc0…26b96b`** từ `882b7ffa` — cùng binary đó hôm nay cũng chậm **~2×** (opt-bench interp 97 ms vs 50 ms ghi sẵn). Program sha256 + `[profile.release]` không đổi.
-- **A/B xen kẽ có kiểm soát**: ghim **1 E-core** (`taskset -c 4`), **5 vòng × 5 mẫu = 25 mẫu/engine/binary**, đảo thứ tự vòng chẵn/lẻ. **Không ô nào tăng median**; **p90 tệ nhất +7,4 %** (<15 %); **trung vị 90 tỉ lệ paired −7,4 %** (final nhanh hơn); stdout sha **5/5 khớp baseline** (interp = vm).
+- **Raw `--runs 3` KHÔNG dùng làm KPI**: **9/10 ô median > 0**; `writebench`/vm median **0,0 %** nhưng p90 **+33,3 %** ⇒ raw không đạt KPI, do **nhiễu host** (load 2,2–5,6, governor `powersave`, P-core chia SMT, tiến trình khác). Chứng minh: dựng lại **binary nền bit-identical `77e64bc0…26b96b`** từ `882b7ffa` — cùng binary đó hôm nay cũng chậm **~2×** (opt-bench interp 97 ms vs 50 ms ghi sẵn). Program sha256 + `[profile.release]` không đổi.
+- **A/B xen kẽ có kiểm soát**: ghim **1 E-core** (`taskset -c 4`), **5 vòng × 5 mẫu = 25 mẫu/engine/binary**, đảo thứ tự vòng chẵn/lẻ. **Không ô nào tăng median**; **p90 tệ nhất +7,4 %** (<15 %); **trung vị 50 tỉ lệ paired** (10 ô × 5 vòng) **−7,4 %** (final nhanh hơn); stdout sha **5/5 khớp baseline** (interp = vm).
 - **Ngưỡng KPI**: median **≤10 %**, p90 **≤15 %** (so nền `882b7ffa`). Kết luận: **không hồi quy** từ `ST-319d`/`ST-319e`.
 
 | Chương trình | Engine | Δmedian | Δp90 | Tỉ lệ paired |
@@ -188,7 +188,11 @@ theo nghĩa file rỗng — đúng là **diff không đổi**.
 | `st316c-wasm-final2-20261126T2130Z.log` | 7.659 | `60064a5cc1fba281b2aece59315bc4d7445a5dd10a0a42c5107543e9a5996bbb` | **final2 @`8c883a16`** (code `ee8f252d`, `dirty=0`): sem 390/390, suite 28/28, conformance 398×2, core 47/0, sqlite 45+2 |
 | `peak1-2026-11-27-chain.sh` | 25.762 | `e239c317b29f6a0b4e75167d423889e659860bceaec15ca448c15a4aa593fa1c` | chain 18 bước, **CHƯA CHẠY** |
 | `final-bench-report.md` | 6.944 | `e6a0380405a89697aea74b2eb309c344d28a2a1a5032b0b593bd5f50d78737f7` | bench cuối Sóng 8: raw nhiễu host + A/B 5×5 ghim E-core |
-| `final-bench-runs5-20261126T213803Z.json` | 7.532 | `3ca403ff0ecb950aa0755ec493c6914de06dbaded9ed66c56ee48fd7565ce953` | 25 mẫu/engine/binary; binary `a47b583e…` |
+| `final-bench-runs5-20261126T213803Z.json` | 7.532 | `3ca403ff0ecb950aa0755ec493c6914de06dbaded9ed66c56ee48fd7565ce953` | **5 mẫu/engine/binary** (mỗi chương trình); binary `a47b583e…` |
+| `final-bench-20261126T213752Z.json` (raw) | 6.763 | `4c98647e13305f10f13401fae934dff4824dc1728691c878efa07559b8778762` | raw `--runs 3` — nhiễu host, **không dùng KPI** |
+| `final-bench-20261126T213752Z.log` (raw) | 1.970 | `5d72e6499a047ffee1890ef44a311d3f35b3ee439b8dc7b03ee37d2db78c6ba3` | raw `--runs 3` |
+| `final-abp-{base,new}-{1..5}.json` (10 tệp) | — | sha từng tệp: `final-bench-sha256.txt:25–34` | **25 mẫu/engine/binary** = 5 vòng × 5 mẫu (A/B ghim) |
+| `final-bench-sha256.txt` | 3.123 | `3e60f2d9bb5e80471915a82b4154ffe4cc0417b78f21c5cd361f2ec8b5bf1ea2` | danh sách sha toàn bộ tệp bench (gồm abp) |
 | `final-bench-build.log` | 3.535 | `3c38cda746c7151da1b9be28b533f069841c77e6785614b0b62b34261418cd11` | build release `a47b583e…` (1m47s) |
 | `final-bench-base882b-build.log` | 3.640 | `483b874f0724d84b4025abbcc49cdfd3c0b8e9f009ed08d876fad19ccd591caa` | control `882b7ffa` → binary `77e64bc0…` |
 

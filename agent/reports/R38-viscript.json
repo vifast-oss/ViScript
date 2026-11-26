@@ -3482,7 +3482,9 @@
       "runs5_json_sha256": "3ca403ff0ecb950aa0755ec493c6914de06dbaded9ed66c56ee48fd7565ce953",
       "kpi": "median <=10%; p90 <=15%",
       "raw": "--runs 3 nhiem host (control 77e64bc0 cung cham ~2x) - khong dung KPI",
-      "ab": "ghim 1 E-core 5 vong x 5 mau: khong median tang; p90 te nhat +7.4% (<15%); trung vi paired -7.4%; stdout 5/5; khong hoi quy 319d/319e"
+      "ab": "ghim 1 E-core 5 vong x 5 mau: khong median tang; p90 te nhat +7.4% (<15%); trung vi 50 ti le paired -7.4%; stdout 5/5; khong hoi quy 319d/319e",
+      "paired": 50,
+      "abp_source": "10 tệp final-abp-{base,new}-{1..5}.json (5 vòng × 5 mẫu = 25 mẫu/engine/binary); sha trong final-bench-sha256.txt:25-34"
     }
   },
   "blocked": [
