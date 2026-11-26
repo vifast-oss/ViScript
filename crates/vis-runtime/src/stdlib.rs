@@ -88,7 +88,10 @@ pub fn call(host: &mut dyn Host, name: &str, args: Vec<Value>, span: Span) -> R<
 }
 
 /// Dispatch theo `StdId` — `match` vét cạn, O(1) (không so chuỗi trong từng nhánh).
-pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) -> R<Value> {
+///
+/// **ST-316a F5**: `args` nhận **sở hữu** (đã là vậy từ trước) — `std.map.remove`/`merge` dùng
+/// quyền sở hữu đó để sửa map tại chỗ khi không chia sẻ (`Rc::make_mut`), không dựng lại map.
+pub fn call_by_id(host: &mut dyn Host, id: StdId, mut args: Vec<Value>, span: Span) -> R<Value> {
     let name = id.as_str();
     match id {
         // ----- std.str -----
@@ -598,15 +601,9 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             Ok(Value::list(out))
         }
         StdId::MapMerge => {
-            let a = ban_do(name, &args[0], 0, span)?;
-            let b = ban_do(name, &args[1], 1, span)?;
-            // **ST-315b**: gộp qua `VisMap` — last-wins, giữ vị trí `a` cho khoá đã có,
-            // nối cuối cho khoá mới (đúng `map.merge` cũ), tra O(1) khi map đủ lớn.
-            let mut out = vis_core::value::VisMap::from_pairs(a.iter().cloned());
-            for (k, v) in b {
-                out.insert(k.clone(), v.clone());
-            }
-            Ok(Value::map_tu(out))
+            // **ST-316a F5**: gọi thẳng `VisMap::merge` trên map `a` **sở hữu** — last-wins,
+            // giữ vị trí `a` cho khoá đã có, nối cuối cho khoá mới; không dựng lại `Vec`.
+            chung::map_merge(name, &mut args, span)
         }
         StdId::MapGetOr => {
             let kv = ban_do(name, &args[0], 0, span)?;
@@ -617,12 +614,9 @@ pub fn call_by_id(host: &mut dyn Host, id: StdId, args: Vec<Value>, span: Span) 
             Ok(kv.get(&kvk).cloned().unwrap_or(mac_dinh))
         }
         StdId::MapRemove => {
-            let kv = ban_do(name, &args[0], 0, span)?;
-            let k = chuoi(name, &args[1], 1, span)?;
-            let kvk = Value::Str(k.to_string());
-            Ok(Value::map(
-                kv.iter().filter(|(k0, _)| !eq(k0, &kvk)).cloned().collect(),
-            ))
+            // **ST-316a F5**: gọi thẳng `VisMap::remove` (xoá tại chỗ khi không chia sẻ, giữ
+            // thứ tự Q3 + chỉ mục băm đồng bộ) thay vì lọc rồi dựng lại `Vec`/`Value::map`.
+            chung::map_remove(name, &mut args, span)
         }
         // **ST-314a (VD-290)**: `StdId` đi thẳng vào dispatch con — không còn `starts_with`
         // chuỗi; thêm biến thể mới mà quên route ⇒ **lỗi biên dịch** (match vét cạn).
