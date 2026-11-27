@@ -144,15 +144,25 @@ fn net_loopback_parity() {
             dong[i]
         );
     }
+    // **ST-321c**: `ECONNREFUSED` có mã errno khác nhau giữa các OS — Linux = 111,
+    // macOS/BSD = 61. Cả hai engine (interp lẫn VM) đều in **nguyên văn errno thật** nên parity
+    // interp↔VM vẫn được so từng byte ở [`hai_duong_chuan_hoa`]; chỉ hằng số kỳ vọng trong test
+    // cần chọn theo `target_os`. Không đụng runtime, không đổi 18 assert phía trên.
     #[cfg(unix)]
-    assert_eq!(
-        &dong[18..],
-        &[
-            "connect=bị từ chối kết nối tới `127.0.0.1:<P>`: Connection refused (os error 111)",
-            "connect_timeout=bị từ chối kết nối tới `127.0.0.1:<P>`: Connection refused (os error 111)",
-        ],
-        "net từ chối (Unix): {out}"
-    );
+    {
+        #[cfg(target_os = "linux")]
+        let errno = 111;
+        #[cfg(not(target_os = "linux"))]
+        let errno = 61;
+        assert_eq!(
+            &dong[18..],
+            [
+                format!("connect=bị từ chối kết nối tới `127.0.0.1:<P>`: Connection refused (os error {errno})"),
+                format!("connect_timeout=bị từ chối kết nối tới `127.0.0.1:<P>`: Connection refused (os error {errno})"),
+            ],
+            "net từ chối (Unix): {out}"
+        );
+    }
 }
 
 /// Server TCP loopback phục vụ `n` kết nối: đọc tới 64 byte, ghi `hi`, đóng chiều ghi.
