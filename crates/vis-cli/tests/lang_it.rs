@@ -10,6 +10,8 @@ mod ban_ghi_an_danh_ten;
 mod generic_cli;
 #[path = "lang_it/ma_truong.rs"]
 mod ma_truong;
+#[path = "lang_it/main_sig.rs"]
+mod main_sig;
 #[path = "lang_it/ngoai_vm.rs"]
 mod ngoai_vm;
 #[path = "lang_it/p0_newtype.rs"]

@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+const K: int = 3
+fn main(a: list[str], b: int = K + 2):
+    print(a)
+    print(b)
