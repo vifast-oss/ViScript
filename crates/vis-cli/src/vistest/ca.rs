@@ -89,6 +89,8 @@ fn chay_mot_lan(
         );
     }
     let err = p.with_extension("err");
+    let trap = p.with_extension("trap");
+    let prefix = p.with_extension("out_prefix");
     let (code, out, stderr, qua_han) = chay(p, vm, strict, timeout_han);
     // **VD-270**: hạn thắng mọi kỳ vọng `.err`/`.out`; cùng câu với nhánh `test fn`.
     if qua_han {
@@ -96,21 +98,68 @@ fn chay_mot_lan(
         let m = format!("quá hạn {ms} ms");
         return Kq::hong(format!("{ten}: {m}"), m);
     }
-    if err.exists() {
-        let mong = std::fs::read_to_string(&err).unwrap_or_default();
-        // `.err` có thể có header SPDX: lấy **dòng đầu không phải chú thích**.
-        let mong = mong
-            .lines()
+
+    // Bổ sung: helper đọc fixture `.exit` / dòng kỳ vọng đầu (SPDX-safe). Nested fn — không đụng module khác.
+    fn doc_exit(p: &Path) -> Option<i32> {
+        let s = std::fs::read_to_string(p.with_extension("exit")).ok()?;
+        s.lines()
+            .map(str::trim)
+            .find(|l| !l.is_empty() && !l.starts_with('#'))?
+            .parse::<i32>()
+            .ok()
+    }
+    fn dong_dau(p: &Path, ext: &str) -> String {
+        let s = std::fs::read_to_string(p.with_extension(ext)).unwrap_or_default();
+        s.lines()
             .map(str::trim)
             .find(|l| !l.is_empty() && !l.starts_with('#'))
-            .unwrap_or("");
-        let muon = if mong.starts_with("VS05") { 101 } else { 2 };
+            .unwrap_or("")
+            .to_string()
+    }
+
+    // `.trap` (28 ca): kỳ vọng **đúng mã** VSxxxx trong stderr và exit ≠ 0 (`.exit` override khi có).
+    if trap.exists() {
+        let mong = dong_dau(p, "trap");
+        let ma_thuc = chan_doan(&stderr).map(|(m, _, _, _)| m).unwrap_or_default();
+        let exit_ok = doc_exit(p).map_or(code != 0, |e| code == e);
+        if exit_ok && !mong.is_empty() && ma_thuc == mong {
+            return Kq::ok();
+        }
+        let (ma, dong, cot, msg) = chan_doan(&stderr).unwrap_or((
+            if mong.is_empty() { "VS?".into() } else { mong },
+            1,
+            1,
+            String::new(),
+        ));
+        return Kq::hong(
+            format!("{ten}:{dong}:{cot}: {ma} {msg}"),
+            format!("{ma} {msg}"),
+        );
+    }
+
+    // `.out_prefix` (2 ca): stdout **bắt đầu bằng** prefix, sau `bo_spdx`; exit mặc định 0.
+    if prefix.exists() {
+        let prefix_str = std::fs::read_to_string(&prefix).unwrap_or_default();
+        let mong = bo_spdx(&prefix_str);
+        let muon = doc_exit(p).unwrap_or(0);
+        if code == muon && bo_spdx(&out).starts_with(mong) {
+            return Kq::ok();
+        }
+        return Kq::hong(
+            format!("{ten}:1:1: VS0000 stdout khác kỳ vọng"),
+            "VS0000 stdout khác kỳ vọng",
+        );
+    }
+
+    if err.exists() {
+        let mong = dong_dau(p, "err");
+        let muon = doc_exit(p).unwrap_or_else(|| if mong.starts_with("VS05") { 101 } else { 2 });
         // ST-30b: hai đường **đã đồng bộ** chẩn đoán ⇒ `--vm` khoá **đúng mã** như interp.
-        if code == muon && stderr.contains(mong) {
+        if code == muon && stderr.contains(&mong) {
             return Kq::ok();
         }
         let (ma, dong, cot, msg) =
-            chan_doan(&stderr).unwrap_or((mong.to_string(), 1, 1, String::new()));
+            chan_doan(&stderr).unwrap_or((mong.clone(), 1, 1, String::new()));
         return Kq::hong(
             format!("{ten}:{dong}:{cot}: {ma} {msg}"),
             format!("{ma} {msg}"),
@@ -119,7 +168,7 @@ fn chay_mot_lan(
     let want_path = p.with_extension("out");
     let want = std::fs::read_to_string(&want_path).unwrap_or_default();
     let want = bo_spdx(&want);
-    if code == 0 && out == want {
+    if code == doc_exit(p).unwrap_or(0) && out == want {
         return Kq::ok();
     }
     if code != 0 {
