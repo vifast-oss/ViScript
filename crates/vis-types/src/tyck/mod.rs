@@ -20,6 +20,7 @@ mod expr;
 mod flow;
 mod gan;
 mod hop;
+mod main_sig;
 mod num;
 mod pat;
 mod phuong_thuc;
@@ -165,6 +166,8 @@ pub fn check(hir: &Hir, symbols: &Symbols, types: &TypeTable) -> CheckOutput {
     // **ST-315d (VD-291 §3.4)** — `const` phụ thuộc vòng bị bắt **tĩnh** (`VS0304`); hàng rào
     // runtime (`ConstCycle`/trap) vẫn giữ cho artifact không qua `vis check`.
     const_cycle::kiem(hir, &mut c.diags);
+    // **ST-321a (`#200`/`#201`)**: chữ ký `main` sai bị chặn tĩnh, trước khi tra cache bytecode.
+    main_sig::kiem(hir, &mut c);
     c.finish()
 }
 
