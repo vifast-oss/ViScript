@@ -1047,3 +1047,145 @@ fn main():
     assert_eq!(v.exit, 0, "VM exit");
     so_khop(&i, &v, "hàm tên trên closure vẫn sync global");
 }
+
+// ---------------------------------------------------------------------------
+// **ST-320a (#211, đề xuất Sóng 9)** — `var self` + `push` trên **trường** (`self.xs.push(2)`).
+//
+// SPEC §4.7: chỉ `var self` được gán; §4.8: gán lồng chỉ trên gốc `var`. VD-51: `push` trên
+// **ô biến** `var` phải ghi lại lvalue (CoW), còn `let`/biểu thức tạm trả list mới (không no-op
+// im lặng). Receiver `self.xs` là **Field** (biểu thức tạm), không phải `HExpr::Var` trực tiếp,
+// nên **không** ghi lại — interp (oracle) và VM đều vậy từ trước `ST-319d`; `mutables` chỉ chứa
+// `sym` của `var`/`var self` khi receiver là `Var` trực tiếp.
+//
+// Ca này khoá **parity** 4 đường default + W=1 non-frame, cộng frame W=1 (đường `sym_ghi_cua`/
+// `mutables` của `var self`), nên **không cần sửa codegen** cho #211. Nếu A0 đổi ngữ nghĩa
+// (push trường cũng rebind như ô `var`), đây là test đỏ có chủ đích.
+// ---------------------------------------------------------------------------
+
+/// Chạy **6 đường**: interp/VM mặc định + W=1 non-frame + frame W=1; assert stdout/exit/
+/// diagnostics rỗng từng đường và parity từng cặp với interp mặc định.
+fn sau_duong_st320a(src: &str, ky_vong: &str, nhan: &str) -> RunOutput {
+    let a = anh(src);
+    let di = vis_interp::run(src, &a.0, &a.1, &a.2, &[]);
+    let dv = vis_vm::run(&a.3, src, &[]);
+    let wi = interp(src, &a, 1);
+    let wv = vm(src, &a, 1);
+    let fi = frame_1(src, &a);
+    let fv = frame_vm_1(src, &a);
+    for (ten, out) in [
+        ("interp", &di),
+        ("VM", &dv),
+        ("interp W1", &wi),
+        ("VM W1", &wv),
+        ("frame interp W1", &fi),
+        ("frame VM W1", &fv),
+    ] {
+        so_khop(&di, out, &format!("{nhan}/{ten}"));
+        assert_eq!(out.stdout, ky_vong, "{nhan}/{ten}: stdout");
+        assert_eq!(out.exit, 0, "{nhan}/{ten}: exit {:?}", out.diagnostics);
+        assert!(
+            out.diagnostics.is_empty(),
+            "{nhan}/{ten}: {:?}",
+            out.diagnostics
+        );
+    }
+    di
+}
+
+/// `self.xs.push(2)` ở **biểu thức cuối** và trong `let` ⇒ trả list mới nhưng **không** ghi lại
+/// `self.xs`; người gọi (giá trị) không thấy đổi. Đọc lại `self.xs` ngay trong hàm vẫn `[1]`.
+const VAR_SELF_PUSH_FIELD: &str = r#"type C:
+    xs: list[int]
+
+impl C:
+    fn cuoi(var self) -> list[int]:
+        self.xs.push(2)
+
+    fn trong_let(var self) -> list[int]:
+        let kq = self.xs.push(2)
+        print(self.xs)
+        kq
+
+async fn dummy() -> int:
+    1
+
+fn main():
+    var c: C = {xs: [1]}
+    let t = spawn dummy()
+    await t
+    print(c.cuoi())
+    print(c.xs)
+    print(c.trong_let())
+    print(c.xs)
+"#;
+
+#[test]
+fn st320a_var_self_push_truong_parity() {
+    sau_duong_st320a(
+        VAR_SELF_PUSH_FIELD,
+        "[1, 2]\n[1]\n[1]\n[1, 2]\n[1]\n",
+        "var self push trường",
+    );
+}
+
+/// Đối chứng: `self.xs = self.xs.push(2)` (gán tường minh trên gốc `var self`, §4.8) **có** đổi
+/// `self.xs` **bên trong** hàm (`[1, 2]` cả hai lần đọc), nhưng người gọi vẫn `[1]` (giá trị).
+const VAR_SELF_GAN_TRUONG: &str = r#"type C:
+    xs: list[int]
+
+impl C:
+    fn gan(var self) -> list[int]:
+        self.xs = self.xs.push(2)
+        print(self.xs)
+        self.xs
+
+async fn dummy() -> int:
+    1
+
+fn main():
+    var c: C = {xs: [1]}
+    let t = spawn dummy()
+    await t
+    print(c.gan())
+    print(c.xs)
+"#;
+
+#[test]
+fn st320a_var_self_gan_truong_cuc_bo() {
+    sau_duong_st320a(
+        VAR_SELF_GAN_TRUONG,
+        "[1, 2]\n[1, 2]\n[1]\n",
+        "var self gán trường",
+    );
+}
+
+/// Đường **`mutables` + `is_var_self` trực tiếp**: `self.push(2)` có base `HExpr::Var` trỏ
+/// tham số `var self` (codegen `expr.rs` nhánh `(Var, "push")`). Đây là dạng **duy nhất** chạm
+/// nhánh đó: method `impl` có `self` kiểu record nên `self.push` không hợp lệ, còn tham số
+/// `var self` tự do **không nhận chú thích kiểu** (VS1b — `{error}`) và được phép gọi `push`.
+/// Kỳ vọng: `self` **ghi ô** trong thân (`[1, 2]`, `len = 2`), người gọi vẫn `[1]` (giá trị).
+const VAR_SELF_LA_LIST: &str = r#"fn keo(var self) -> int:
+    let y = self.push(2)
+    print(self)
+    print(y)
+    self.len()
+
+async fn dummy() -> int:
+    1
+
+fn main():
+    var xs = [1]
+    let t = spawn dummy()
+    await t
+    print(keo(xs))
+    print(xs)
+"#;
+
+#[test]
+fn st320a_var_self_la_list_push_ghi_o() {
+    sau_duong_st320a(
+        VAR_SELF_LA_LIST,
+        "[1, 2]\n[1, 2]\n2\n[1]\n",
+        "var self list push",
+    );
+}
