@@ -98,9 +98,14 @@ use rusqlite::hooks::{AuthAction, Authorization};
 use schema::{chinh_sach, schema_scans_for_test, HOST_PRAGMAS};
 #[cfg(test)]
 use std::time::{Duration, Instant};
-use token::token_dung_dang;
 #[cfg(test)]
-use token::{ngau_nhien_du_phong, ngau_nhien_os};
+use token::ngau_nhien_du_phong;
+/// Ca test duy nhất dùng `ngau_nhien_os` là `tests/sqlite_a.rs` (`#[cfg(unix)]`) ⇒ trên Windows
+/// import này là dư (`-D warnings` ⊗ exit 101). `token_ngau_nhien` gọi nội bộ trong `token.rs`,
+/// không cần import ở đây. Giữ `ngau_nhien_du_phong` cho mọi nền (ca fallback không gated).
+#[cfg(all(test, unix))]
+use token::ngau_nhien_os;
+use token::token_dung_dang;
 #[cfg(test)]
 use vis_core::host::DbHost;
 #[cfg(test)]
