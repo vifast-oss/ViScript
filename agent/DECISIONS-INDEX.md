@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # DECISIONS-INDEX — chỉ mục quyết định `VD`
 
-> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-306`, 2026-11-27). Không sửa nội dung `VD` ở đây;
+> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-307`, 2026-11-27). Không sửa nội dung `VD` ở đây;
 > nguồn sự thật vẫn là `agent/DECISIONS.md`. Mỗi `VD` một dòng: tiêu đề 1 dòng + trạng thái.
-> Có **294** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
+> Có **295** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
 
 | VD | Tiêu đề 1 dòng | Trạng thái | Dòng |
 |---|---|---|---:|
@@ -302,6 +302,7 @@
 | VD-304 | Mở Sóng 9 nhỏ — `ST-320a` (`var self`+`push`) & `ST-320b` (frame env module) | đã chốt | 4253 |
 | VD-305 | Chốt Sóng 9 (`ST-320a`/`ST-320b` `DONE`, gate 3940, 38 test), numbering nợ `#211`..`#215` theo R1, giữ `ST-316c` `BLOCKED` (chain exit=1) | đã chốt | 4263 |
 | VD-306 | Chốt Sóng 10 — 4 merge fix (`ST-321a..d` `DONE`, HEAD `0b32c5dc`, gate 3942, 40 test), đóng `#200`/`#201` (sổ 82/114), giữ `ST-316c` `BLOCKED` chờ re-run full-gate | đã chốt | 4274 |
+| VD-307 | Chốt bằng chứng 3-OS (`ps` gate 3942 + `psvn` peak3 + `mps` peak4), mở `ST-316c` `DONE` (sổ giữ 215 = 82/114; `ST-309` vẫn BLOCKED; không tag) | đã chốt | 4284 |
 
 ## Ghi chú
 
