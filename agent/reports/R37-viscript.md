@@ -34,8 +34,8 @@ và **`v1.0.0-rc1`** trên cùng một commit.
 | 6 | Soak **24 h** Linux (+ 4 h Windows/macOS) | **CHƯA ĐO** | — |
 | 7 | Fuzz parser **8 h** | **CHƯA ĐỦ** | **2 h đang chạy** (seed `202611240550`, pid 2321124, bắt đầu `05:05:25+09:00`); chưa có verdict |
 | 8 | Fuzz verifier/decoder **100 M ca** | **CHƯA ĐỦ** | mới **60.000.000 ca / 0 vi phạm** (`st309_fuzz_verify`) |
-| 9 | Fuzz có VM/watchdog 2 h (xác nhận `#195`) | **CHƯA ĐO** | `#195` còn mở; harness watchdog **không có** @`3d85bd2` |
-| 10 | Đóng `#194`, `#195` | **CHƯA** | cả hai còn mở/đề xuất — **điều kiện cứng**, xem §4 |
+| 9 | Fuzz có VM/watchdog 2 h (xác nhận `#195`) | **ĐẠT (H4)** | watchdog **2 h** trên `H4` = `db67eab`: **74.811.821 ca, `vi_pham=0`, `max_case_ms=23355`** (23,355 s < 300 s), 7.200,34 s; log `/home/ps/vislogs/v060/watchdog2h-h4.log` sha256 `df24613e…5daf` khớp `sha256-h4.txt` (lịch sử @`3d85bd2`: **CHƯA ĐO** — harness watchdog chưa có) |
+| 10 | Đóng `#194`, `#195` | **ĐẠT (H4)** | `#194` đóng ở **ST-311b**; `#195` đóng sổ ở **ST-311a/`H4`** (watchdog 2 h PASS, log `watchdog2h-h4.log` sha256 `df24613e…5daf`) — lịch sử @`3d85bd2`: cả hai còn mở/đề xuất, **điều kiện cứng**, xem §4 |
 | 11 | Chốt `H` = commit `0.6.0`, chạy lại ma trận trên `H` | **CHƯA** | mọi số ở trên là **`v0.5.5`**, chưa phải `H` |
 | 12 | `R37-viscript.json` + `.license`, `report-check --all` | **CHƯA** (đúng chủ đích) | chỉ sinh JSON sau khi đủ 1–11 |
 
@@ -105,7 +105,7 @@ Chi tiết: [`JOURNAL/mac-full-v055.md`](../JOURNAL/mac-full-v055.md).
 |---|---|---|---|
 | Fuzz parser | **8 h**, `vi phạm 0` | 2 h đang chạy (≈35 phút tại lúc soạn) | **CHƯA ĐỦ** |
 | Fuzz verifier/decoder | **100 M ca**, `vi_pham=0` | **100 M ca, 0 vi phạm** (35,69 s) | **ĐẠT** |
-| Fuzz có VM + watchdog | **2 h**, 0 ca > 300 s | chưa chạy; harness watchdog không có @`3d85bd2` | **CHƯA ĐO** |
+| Fuzz có VM + watchdog | **2 h**, 0 ca > 300 s | `H4` = `db67eab`: **74.811.821 ca, 0 vi phạm, max 23,355 s**, 7.200,34 s; log `watchdog2h-h4.log` sha256 `df24613e…5daf` (lịch sử @`3d85bd2`: chưa chạy, harness chưa có) | **ĐẠT (H4)** |
 | Differential | 100k × 5 seed, `lech=0` | 5 seed @`b4db374` + 1 seed mới | **ĐẠT (pre-H)** |
 | Soak Linux | **24 h** liên tục, 0 fail sản phẩm, RSS/fd phẳng, dirty 0 | **10/10 628 s** @`b4db374` — **không phải 24 h** | **CHƯA ĐO** |
 | Soak Windows/macOS | 4 h mỗi nền (mức Tier 1) | chưa chạy trên `v0.5.5` | **CHƯA ĐO** |
@@ -117,7 +117,7 @@ Mọi số phải truy được về log ngoài repo + sha256; **không** suy t�
 
 ## 4. Nợ chặn tag: `#194`, `#195` (điều kiện cứng) và nợ đã biết
 
-### 4.1 `#194` — race metadata-only FS (**mở**)
+### 4.1 `#194` — race metadata-only FS (**đóng ở ST-311b**)
 
 - **Nguồn**: `agent/SO-NO.md`; `agent/JOURNAL/st309-security.md` §4; mở tại `VD-285`.
 - **Bản chất**: `size`/`list`/`exists`/`canonicalize`/`read_link`/`is_*`/`walk` còn
@@ -127,12 +127,13 @@ Mọi số phải truy được về log ngoài repo + sha256; **không** suy t�
   **0 rò** metadata; cập nhật `agent/HOST-BAO-DAM.md`; ghi đóng trong `SO-NO.md`.
   Windows giữ caveat `FsGuard` (kiểm theo đường dẫn) — **không** tuyên bố đóng trên Windows
   nếu chưa có cơ chế tương đương.
-- **Chặn tag**: còn `mở` ⇒ **không** tag `v0.6.0`/`v1.0.0-rc1`.
+- **Chặn tag**: **`#194` đã đóng ở `ST-311b`** (metadata theo `fd`: `statat`/`openat`/`readlinkat`/`fstat`; race 100.000 vòng Linux + macOS **0 rò**) ⇒ **không còn chặn**; caveat Windows (`FsGuard` theo đường dẫn) giữ nguyên.
 
-### 4.2 `#195` — VM back-edge O(n²) / fuel không phải wall-clock (**đề xuất, chưa có dòng `SO-NO`**)
+### 4.2 `#195` — VM back-edge O(n²) / fuel không phải wall-clock (**đóng ở ST-311a/`H4`**)
 
 - **Nguồn**: `plan/st309-qa` `623f3ba`; `agent/JOURNAL/st309-qa.md` §3/§8.
-  **Chưa đăng ký số chính thức trong `SO-NO@3d85bd2`** — phải đăng ký trước khi đóng.
+  **Chưa đăng ký số chính thức trong `SO-NO@3d85bd2`** — đã đăng ký ở `ST-311a` (`VD-286`);
+  hiện có dòng `#195` trong `SO-NO.md` và đóng sổ trên `H4`.
 - **Bản chất**: bytecode **verify-OK** bị đột biến cho back-edge nhảy về `IterInit` làm
   `loop_ends` phình mỗi vòng; `dat_pc()` quét tuyến tính ⇒ **O(n²)** thời gian + O(n) bộ nhớ.
   Bằng chứng gốc: module 196 byte chạy **>101 phút**; fuel 1 M = 3,03 s, 10 M = 482,72 s,
@@ -141,7 +142,10 @@ Mọi số phải truy được về log ngoài repo + sha256; **không** suy t�
   (b) **deadline wall-clock** cho `Vm::run`; (c) giữ 0 panic/UB; (d) harness watchdog bắt ca chậm.
 - **Nghiệm thu**: slowcase < 300 s ở fuel 100 M; 1 M→10 M→100 M **không còn bậc hai**
   (mỗi bậc ≤ 15×, không phải 160×); watchdog 2 h **0 ca > 300 s**; `SO-NO.md` ghi đóng.
-- **Chặn tag**: còn `mở` ⇒ **không** tag `v0.6.0`/`v1.0.0-rc1`.
+  **ĐẠT trên `H4`** — watchdog **74.811.821 ca / `vi_pham=0` / max 23,355 s** (7.200,34 s),
+  log `watchdog2h-h4.log` sha256 `df24613e…5daf` khớp `sha256-h4.txt`; `#195` **đã đóng** trong `SO-NO.md`.
+- **Chặn tag**: **`#195` đã đóng** (ST-311a/`H4`); tag `v0.6.0`/`v1.0.0-rc1` **vẫn chưa có**
+  (chờ soak 24 h + JSON + A0 duyệt theo R37 §1).
 
 ### 4.3 Nợ đã biết, không chặn Phase C
 
