@@ -46,7 +46,10 @@ pub(super) fn eval_work<'a>(it: &mut Interp<'a>, frame: &mut IFrame<'a>, e: &'a 
             if let Some(v) = v {
                 frame.push_val(v);
             } else if let Some(f) = sym.and_then(|s| it.fns.get(&s).copied()) {
-                let cenv = frame.cur().env.clone();
+                // **ST-320b (#212)**: giá trị hàm **tên** mang **env module**, không phải env
+                // closure đang gọi — `let h = tang` trong lambda rồi `h()` vẫn đọc/ghi global
+                // cấp tệp như interp non-frame (ST-319e). Lambda (`MakeLambda`) giữ snapshot.
+                let cenv = it.env_module();
                 frame.push_val(Value::Fn(Rc::new(crate::value::Closure {
                     name: f.name.clone(),
                     params: f.params.iter().map(|p| p.sym).collect(),
@@ -702,10 +705,23 @@ pub(super) fn call_value<'a>(
                     span,
                 )));
             }
+            // **ST-319c2 (#206)**: lambda (`name` rỗng, tạo bởi `MakeLambda`) chụp biến theo
+            // **giá trị** — mỗi lần gọi có env riêng từ snapshot `c.env`, gộp thay đổi về
+            // `c.env` khi khung xong (không đụng `globals`).
+            // **ST-320b (#212)**: giá trị hàm **tên** (`let h = tang`) không bắt biến — chạy
+            // trên **env module** như `call_hfn` non-frame (ST-319e) và **không merge** ngược
+            // vào `c.env`; trước đây `merge` chép snapshot hàm tên vào env closure, khiến
+            // closure thấy global vừa ghi (`1,1,1` thay vì VM `0,0,1`).
+            let la_closure = c.name.is_empty();
+            let goc = if la_closure {
+                c.env.clone()
+            } else {
+                it.env_module()
+            };
             // **VD-258**: mỗi lần gọi closure có **env riêng** (snapshot của env bắt).
             // Trước đây dùng chung `c.env` ⇒ lần gọi B đang treo/đã xong xoá tham số của
             // lần gọi A đang treo. Gộp biến bắt về `c.env` khi khung xong (xem frame.rs).
-            let env = Rc::new(RefCell::new(c.env.borrow().clone()));
+            let env = Rc::new(RefCell::new(goc.borrow().clone()));
             let mut restore = Vec::new();
             for (i, p) in c.params.iter().enumerate() {
                 restore.push((*p, env.borrow().get(p).cloned()));
@@ -728,11 +744,11 @@ pub(super) fn call_value<'a>(
                 last: None,
                 loops: Vec::new(),
                 restore,
-                merge: Some(c.env.clone()),
-                // **ST-319c2 (#206)**: lambda (`name` rỗng, tạo bởi `MakeLambda`) bắt biến
-                // theo **giá trị** — khung này cô lập với `globals`. Giá trị hàm của **hàm
-                // tên** (`let f = tang`) vẫn giữ env chia sẻ như interp/VM ⇒ `false`.
-                by_value: c.name.is_empty(),
+                merge: la_closure.then(|| c.env.clone()),
+                // **ST-319c2 (#206)**: lambda bắt biến theo **giá trị** — khung này cô lập với
+                // `globals`. Giá trị hàm của **hàm tên** (`let f = tang`) chạy trên env module
+                // như interp/VM ⇒ `false`.
+                by_value: la_closure,
             });
             Ok(())
         }

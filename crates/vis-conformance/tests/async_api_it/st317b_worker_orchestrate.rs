@@ -1189,3 +1189,154 @@ fn st320a_var_self_la_list_push_ghi_o() {
         "var self list push",
     );
 }
+
+/// **w25 (ST-320b / #212, P2-2 ST-319c2)** — **hàm tên qua giá trị tạo TRONG closure**:
+/// `let h = tang`/`let h = doc` phải chạy trên **env module** (như `call_hfn` non-frame
+/// ST-319e), không thừa hưởng snapshot closure. Trước bản vá, frame chụp `frame.cur().env` rồi
+/// `merge` chép ngược vào snapshot:
+/// - write-only: frame `1,1,1` vs VM `0,0,1` — closure thấy global vừa ghi qua `h()`;
+/// - read-only + `await`: frame `900,200,300,400` vs VM `903,203,303,403` — `h()` đọc snapshot
+///   `g=0` thay vì global `g=3`.
+#[test]
+fn w25_frame_w1_ham_ten_qua_gia_tri_trong_closure() {
+    // Write-only: `tang` ghi `g`, closure trả `g` (snapshot) — global chỉ đổi ngoài closure.
+    const GHI: &str = r#"var g = 0
+
+async fn dummy() -> int:
+    1
+
+fn tang():
+    g = 1
+
+fn main():
+    let f = fn() -> int:
+        let h = tang
+        h()
+        g
+    let t = spawn dummy()
+    await t
+    print(f())
+    print(f())
+    tang()
+    print(g)
+"#;
+    let a = anh(GHI);
+    let i = frame_1(GHI, &a);
+    let v = frame_vm_1(GHI, &a);
+    assert_eq!(i.stdout, "0\n0\n1\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "0\n0\n1\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "write-only: hàm tên qua giá trị trong closure");
+
+    // Read-only + await: closure tạo trước task ghi `g=3`; `h = doc` (chỉ đọc) gọi sau `await`
+    // phải thấy global `3` (env module), không phải snapshot `0` của closure.
+    const DOC: &str = r#"var g = 0
+
+async fn dat() -> int:
+    g = 3
+    3
+
+fn doc() -> int:
+    g
+
+fn main():
+    let f = fn():
+        let h = doc
+        let t = spawn dat()
+        await t
+        print(900 + h())
+        print(200 + h())
+        print(300 + h())
+        print(400 + h())
+    f()
+"#;
+    let a = anh(DOC);
+    let i = frame_1(DOC, &a);
+    let v = frame_vm_1(DOC, &a);
+    assert_eq!(
+        i.stdout, "903\n203\n303\n403\n",
+        "interp: {:?}",
+        i.diagnostics
+    );
+    assert_eq!(v.stdout, "903\n203\n303\n403\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(
+        &i,
+        &v,
+        "read-only + await: hàm tên qua giá trị trong closure",
+    );
+}
+
+/// **w26 (ST-320b F1 / #212, P2-1 audit)** — **hàm tên trong `const`** + free HOF:
+/// vòng `const` chạy trước các điểm sync `env_module` cũ, nên `const H: fn(int) -> bool = lay`
+/// từng chụp map rỗng của `Interp::new`; `where([1], H)` gọi callback qua `c.env` ⇒ frame trap
+/// `VS0501` trong khi VM in `[1]`. F1 sync `it.env`/`env_module` vào `globals` **trước** const.
+#[test]
+fn w26_frame_w1_const_ham_ten_qua_hof() {
+    const SRC: &str = r#"var g = 1
+
+async fn dummy() -> int:
+    1
+
+fn lay(x: int) -> bool:
+    g > 0
+
+const H: fn(int) -> bool = lay
+
+fn main():
+    let t = spawn dummy()
+    await t
+    print(where([1], H))
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "[1]\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "[1]\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "const hàm tên qua HOF trong frame");
+}
+
+/// **w27 (ST-320b / P1-320b-1 — audit sâu, ĐỎ trước vá)**: HOF `where` gọi callback hàm tên
+/// ghi biến cấp tệp. Callback chạy non-frame (`Host::call` → `call_closure`) ghi thẳng globals
+/// nhưng **không đi qua `DongBo::ghi`** ⇒ frame peer/cache giữ ô cũ, in `g = 0`; main frame
+/// và VM in `g = 1`. Kỳ vọng đúng (SPEC §4.7, hàm tên đọc/ghi global module): `[1]\n1\n`
+/// cho **cả hai** engine. Test này đỏ trên tip `8b164d48` — giữ làm bằng chứng HOLD merge.
+#[test]
+fn w27_frame_w1_hof_callback_ghi_global() {
+    const SRC: &str = r#"var g = 0
+
+async fn dummy() -> int:
+    1
+
+fn tang(x: int) -> bool:
+    g = g + 1
+    true
+
+fn main():
+    let t = spawn dummy()
+    await t
+    print(where([1], tang))
+    print(g)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    // VM/main frame là oracle: `[1]` + g=1. Frame interp hiện `[1]` + g=0 ⇒ ĐỎ.
+    assert_eq!(i.stdout, "[1]\n1\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "[1]\n1\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "HOF callback hàm tên ghi global trong frame");
+}

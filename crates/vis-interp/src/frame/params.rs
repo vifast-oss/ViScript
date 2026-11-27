@@ -18,6 +18,9 @@ pub(super) fn khoi_tao_bien_cap_tep_frame<'a>(
     mutable: &Rc<RefCell<HashSet<u32>>>,
 ) -> Option<Trap> {
     it.env = globals.clone();
+    // **ST-320b (#212)**: `env_module` phải trỏ cùng `globals` — nếu không, giá trị hàm tên
+    // tạo trong closure chụp map rỗng của `Interp::new` (P2-2 ST-319e).
+    it.dat_env_module(globals.clone());
     let loi = match it.khoi_tao_bien_cap_tep() {
         Ok(()) => None,
         Err(Abort::Trap(t)) => Some(t),

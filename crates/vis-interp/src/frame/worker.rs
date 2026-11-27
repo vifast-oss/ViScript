@@ -27,6 +27,17 @@ pub(crate) fn run_frame_driver<'a>(
     // **VD-255 / Group B**: hằng cấp tệp được đánh giá trước main (khớp `interp.rs:229`).
     // Dùng chung một `Env` để const sau thấy const trước; mỗi frame con clone env làm gốc.
     let globals: Env = Rc::new(RefCell::new(HashMap::new()));
+    // **ST-320b F1 (#212, P2-1 audit)**: const chạy **trước** hai điểm sync cũ
+    // (`params.rs`/nhánh không `main`) — phải trỏ `env`/`env_module` vào `globals` ngay từ đầu,
+    // nếu không `Value::Fn` hàm tên trong `const` giữ map rỗng của `Interp::new`; free HOF
+    // (`where`/`each`/`sort_by`) gọi callback qua `c.env` ⇒ trap `VS0501`. Hai sync cũ giữ
+    // nguyên (idempotent).
+    it.env = globals.clone();
+    it.dat_env_module(globals.clone());
+    // **ST-320b (P1-320b-1)**: bật sổ ghi non-frame — callback HOF (`Host::call` →
+    // `call_closure`) ghi thẳng globals mà không đi qua `DongBo::ghi`, làm cache frame
+    // (clone của globals) giữ ô cũ. Mọi lát `buoc_frame_dong_bo` nhả sổ này vào dirty.
+    it.frame_ghi_ngoai = Some(Vec::new());
     let mutable: Rc<RefCell<HashSet<u32>>> = Rc::new(RefCell::new(HashSet::new()));
     let consts: Vec<(u32, &'a HExpr)> = hir
         .items
@@ -102,6 +113,8 @@ pub(crate) fn run_frame_driver<'a>(
         // biến top-level là ô chung với task frame — cùng ngữ nghĩa interp non-frame/VM.
         None => {
             it.env = globals.clone();
+            // **ST-320b (#212)**: giữ `env_module` cùng handle với `globals` (xem `params.rs`).
+            it.dat_env_module(globals.clone());
             globals.clone()
         }
     };
@@ -608,6 +621,32 @@ impl DongBo {
         self.frame_seq.insert(id, self.seq);
     }
 
+    /// **ST-320b (P1-320b-1)** — nhận các `sym` bị ghi **trực tiếp vào globals** qua callback
+    /// HOF non-frame (`where`/`each`/`sort_by` → `Host::call` → `call_closure`). Giá trị thật đã
+    /// nằm trong globals; việc cần làm là đánh dirty và bơm ngay vào các khung của frame hiện tại
+    /// (cache clone) — khác với `ghi` (đọc giá trị từ khung rồi chép ngược ra globals).
+    fn ghi_ngoai(&mut self, it: &Interp<'_>, frame: &mut IFrame<'_>, sym: u32, id: u32) {
+        if frame.cur().by_value {
+            return;
+        }
+        let globals = it.env.clone();
+        if !globals.borrow().contains_key(&sym) {
+            return;
+        }
+        self.seq += 1;
+        self.dirty.insert(sym, self.seq);
+        let v = globals
+            .borrow()
+            .get(&sym)
+            .cloned()
+            .expect("ô globals vừa đọc");
+        let cap = [(sym, v)];
+        nap_vao_env(frame, &globals, &cap);
+        // Khung hiện tại đã được bơm trực tiếp ⇒ coi như đã thấy mốc này; các frame khác
+        // sẽ nhận ở `nap` đầu lát kế tiếp.
+        self.frame_seq.insert(id, self.seq);
+    }
+
     /// Bỏ mục mà **mọi** frame sống đã đồng bộ — chỉ chạy khi sổ ≥ 64 mục để amortize O(#frame).
     fn prune(&mut self) {
         if self.dirty.len() < 64 {
@@ -733,6 +772,13 @@ fn buoc_frame_dong_bo<'a>(
                 // Đồng bộ **kể cả khi item lỗi** — side-effect đã xảy ra trước trap vẫn phải
                 // thấy được ở frame khác (final join/báo lỗi), đúng như env chung non-frame.
                 let res = super::process_work(it, frame, w);
+                // **ST-320b (P1-320b-1)**: callback HOF chạy non-frame ghi thẳng globals ⇒
+                // không có work-item `ApplyAssignVar` để `sym_ghi` thấy. Nhả sổ ghi non-frame
+                // vào dirty + bơm cache frame ngay cả khi item vừa rồi trap (side-effect đã xảy ra).
+                let ngoai = it.frame_ghi_ngoai.as_mut().map(std::mem::take);
+                for sym in ngoai.into_iter().flatten() {
+                    dong_bo.ghi_ngoai(it, frame, sym, frame_id);
+                }
                 if let Some(sym) = sym_ghi {
                     dong_bo.ghi(it, frame, sym, frame_id);
                 }
