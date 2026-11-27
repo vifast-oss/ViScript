@@ -2,6 +2,7 @@
 //! **ST-311d (VD-286)** — test đơn vị của `vis test` (`vistest.rs`), tách ra cùng thư mục.
 
 use std::path::{Path, PathBuf};
+#[cfg(unix)]
 use std::process::Command;
 
 use super::*;
