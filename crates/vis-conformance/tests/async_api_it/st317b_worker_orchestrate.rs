@@ -1163,3 +1163,38 @@ fn main():
     assert_eq!(v.exit, 0, "VM exit");
     so_khop(&i, &v, "const hàm tên qua HOF trong frame");
 }
+
+/// **w27 (ST-320b / P1-320b-1 — audit sâu, ĐỎ trước vá)**: HOF `where` gọi callback hàm tên
+/// ghi biến cấp tệp. Callback chạy non-frame (`Host::call` → `call_closure`) ghi thẳng globals
+/// nhưng **không đi qua `DongBo::ghi`** ⇒ frame peer/cache giữ ô cũ, in `g = 0`; main frame
+/// và VM in `g = 1`. Kỳ vọng đúng (SPEC §4.7, hàm tên đọc/ghi global module): `[1]\n1\n`
+/// cho **cả hai** engine. Test này đỏ trên tip `8b164d48` — giữ làm bằng chứng HOLD merge.
+#[test]
+fn w27_frame_w1_hof_callback_ghi_global() {
+    const SRC: &str = r#"var g = 0
+
+async fn dummy() -> int:
+    1
+
+fn tang(x: int) -> bool:
+    g = g + 1
+    true
+
+fn main():
+    let t = spawn dummy()
+    await t
+    print(where([1], tang))
+    print(g)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    // VM/main frame là oracle: `[1]` + g=1. Frame interp hiện `[1]` + g=0 ⇒ ĐỎ.
+    assert_eq!(i.stdout, "[1]\n1\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "[1]\n1\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "HOF callback hàm tên ghi global trong frame");
+}

@@ -182,3 +182,11 @@ con/aggregator sẵn có (R8 không đổi).
   cho frame `[1], g=0` vs VM `[1], g=1`) **vẫn mở** — nợ riêng, không chặn `#212`; không thêm
   test cho ca ghi trong F1.
 - Lambda/closure, `#203`, cache/VBC1 không đổi. **Chưa merge/push**.
+
+## Addendum P1-320b-1 — test đỏ `w27`, HOLD merge (2026-11-27T00:34Z)
+
+- Audit sâu `audit-320b-deep-20261126T225846Z.md` phát hiện HOF `where/each/sort_by` callback ghi global → frame interp `[1]/0` vs main/VM `[1]/1`; task frame `0,0` vs `3,3`. Nguyên nhân: callback non-frame ghi globals không qua `DongBo::ghi`; hồi quy từ `128cf40f` (không phải F1 `7c807ba8`).
+- Thêm `w27_frame_w1_hof_callback_ghi_global` vào `st317b_worker_orchestrate.rs`: kỳ vọng `[1]\n1\n` cho cả interp + VM frame W=1.
+- Chạy thật `cargo test -p vis-conformance --test lib_api_it -- w27`: **ĐỎ** — `left "[1]\n0\n"` / `right "[1]\n1\n"`, `TEST_EXIT=101`; log `/home/ps/vislogs/st320b-p1-w27-red2.log` (sha `001ad28d…9351e8`). Lần đầu filter `--exact` trả 0 test (`st320b-p1-w27-red.log`, vô hại).
+- **Quyết định**: **HOLD merge `8b164d48`**. Chưa sửa mã sản phẩm (không đủ thời gian trước peak 01:00 UTC, không sửa ẩu). Giữ branch `plan/st320b` + test đỏ làm bằng chứng; Builder phiên sau vá `DongBo`/HOF writeback rồi chạy lại `w27` xanh, audit addendum + gate/diff/clippy mới merge. `plan/st320a` (`2f60d023`, test-only) merge được riêng.
+- `main` frozen `ff585af8`, chain 0-LLM armed 01:00Z; commit này **không** đụng main.
