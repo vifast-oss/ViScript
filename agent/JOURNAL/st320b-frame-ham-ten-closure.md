@@ -190,3 +190,12 @@ con/aggregator sẵn có (R8 không đổi).
 - Chạy thật `cargo test -p vis-conformance --test lib_api_it -- w27`: **ĐỎ** — `left "[1]\n0\n"` / `right "[1]\n1\n"`, `TEST_EXIT=101`; log `/home/ps/vislogs/st320b-p1-w27-red2.log` (sha `001ad28d…9351e8`). Lần đầu filter `--exact` trả 0 test (`st320b-p1-w27-red.log`, vô hại).
 - **Quyết định**: **HOLD merge `8b164d48`**. Chưa sửa mã sản phẩm (không đủ thời gian trước peak 01:00 UTC, không sửa ẩu). Giữ branch `plan/st320b` + test đỏ làm bằng chứng; Builder phiên sau vá `DongBo`/HOF writeback rồi chạy lại `w27` xanh, audit addendum + gate/diff/clippy mới merge. `plan/st320a` (`2f60d023`, test-only) merge được riêng.
 - `main` frozen `ff585af8`, chain 0-LLM armed 01:00Z; commit này **không** đụng main.
+
+## F2 addendum (P1-320b-1, 2026-11-27 ~00:51 UTC)
+
+- Checkpoint trước: `a02f3443` — test `w27_frame_w1_hof_callback_ghi_global` ĐỎ (`[1]\n0\n` vs `[1]\n1\n`), HOLD merge.
+- Nguyên nhân: callback HOF (`where`/`each`/`sort_by`) chạy non-frame `Host::call` → `call_closure` ghi thẳng `it.env` (= globals) nhưng không đi qua `DongBo::ghi` ⇒ `frame.cur().env` (clone globals) giữ ô cũ.
+- Vá: `Interp.frame_ghi_ngoai: Option<Vec<u32>>` (bật bởi frame driver) ghi nhận sym bị ghi vào env module từ đường non-frame (`ghi_o`/`lvalue_set`, chỉ khi `Rc::ptr_eq(env, env_module)` ⇒ giữ by-value #206/#209, F1 const, #203); `DongBo::ghi_ngoai` đánh dirty + `nap_vao_env` bơm ngay vào khung frame hiện tại, các frame khác nhận ở `nap` đầu lát kế; drain sau mỗi work-item trong `buoc_frame_dong_bo`.
+- Kết quả: w27 ĐỎ→XANH; `cargo test -p vis-conformance --test lib_api_it -- st317b_worker_orchestrate` **35/35 pass** (w19..w26 không hồi quy); `./vis-dev gate --fast` **PASS**; `VIS_DIFF_N=100000 ./bin/vis-diff` **lech=0** (tong=100000, chay=94425); `cargo clippy --workspace --all-targets -- -D warnings` **exit 0**; `cargo fmt --all -- --check` exit 0.
+- Log: `/home/ps/vislogs/st320b-p1-f2-{tests,gate2,diff2,clippy2}.log` (w27: `st320b-p1-fix-w27.log`).
+- Kết luận: **merge được sau audit addendum**. Không tự merge — main frozen `ff585af8`, chain armed 01:00 UTC. Không push.

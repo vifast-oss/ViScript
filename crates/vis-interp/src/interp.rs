@@ -55,6 +55,8 @@ pub(crate) struct Interp<'a> {
     env_module: Env,
     /// **ST-319e (#210)** — độ sâu closure non-frame đang chạy. `0` ⇒ `env` **là** env module
     /// (kể cả `globals` frame gán vào `it.env`); `> 0` ⇒ `env_module` mới là env module.
+    /// **ST-320b (P1-320b-1)** — xem `frame_ghi_ngoai` bên dưới.
+    pub(crate) frame_ghi_ngoai: Option<Vec<u32>>,
     closure_dong: u32,
     /// **VD-260** — kiểu tĩnh suy từ annot + initializer (mirror codegen `collect_sym_tys`);
     /// dùng cho đích gán `var`/field/index và nâng nhánh `if`/`match`.
@@ -156,6 +158,7 @@ impl<'a> Interp<'a> {
             stmts: &hir.stmts,
             env: env.clone(),
             env_module: env,
+            frame_ghi_ngoai: None,
             closure_dong: 0,
             sym_ty,
             fn_rets,
@@ -225,6 +228,22 @@ impl<'a> Interp<'a> {
     /// (ST-319e P2-2 / #212).
     pub(crate) fn dat_env_module(&mut self, env: Env) {
         self.env_module = env;
+    }
+
+    /// **ST-320b (P1-320b-1)** — ghi nhận lệnh ghi **thẳng vào env module** từ callback HOF
+    /// non-frame (`where`/`each`/`sort_by` → `Host::call` → `call_closure`). Frame driver bật
+    /// `Some(Vec::new())` để `DongBo` nhả sổ này vào dirty-set, đồng bộ cache frame (clone của
+    /// globals) sau callback.
+    ///
+    /// Ghi nhận một lệnh ghi **thẳng vào env module** (ôn Singleton chia sẻ giữa các frame).
+    /// Chỉ đánh dấu khi `env` hiện tại **chính là** env module — closure bắt theo giá trị có
+    /// env riêng nên ghi cục bộ, không được xuyên ra frame khác (#206/#209 vẫn giữ nguyên).
+    pub(crate) fn ghi_ngoai(&mut self, id: u32) {
+        if let Some(s) = self.frame_ghi_ngoai.as_mut() {
+            if Rc::ptr_eq(&self.env, &self.env_module) {
+                s.push(id);
+            }
+        }
     }
 
     /// **ST-320b (#212)** — env **module** hiện hành cho `Value::Fn` của hàm tên.
@@ -387,6 +406,7 @@ impl<'a> Interp<'a> {
             )));
         }
         self.env.borrow_mut().insert(id, v);
+        self.ghi_ngoai(id);
         Ok(())
     }
 
@@ -426,6 +446,7 @@ impl<'a> Interp<'a> {
             HExpr::Var { sym: Some(id), .. } => {
                 self.kiem_ghi_duoc(*id, span)?;
                 self.env.borrow_mut().insert(*id, v);
+                self.ghi_ngoai(*id);
                 Ok(())
             }
             HExpr::Field { .. } | HExpr::Index { .. } => Err(Abort::Trap(Trap::new(
