@@ -28,6 +28,8 @@ mod self_amp_hop_long;
 mod sem;
 #[path = "lang_it/st316b.rs"]
 mod st316b;
+#[path = "lang_it/st325d.rs"]
+mod st325d;
 #[path = "lang_it/stage_dau.rs"]
 mod stage_dau;
 #[path = "lang_it/trait_cli.rs"]

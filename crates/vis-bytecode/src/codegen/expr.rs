@@ -522,10 +522,11 @@ impl<'g> Emit<'g> {
                         self.f.patch(g, lpop);
                     }
                 }
-                {
-                    let c = self.g.cst(LitKind::Bool, "false");
-                    self.f.push(Instr::Const(c), *span, 1);
-                }
+                // **ST-325d (nợ #2)**: rơi khỏi mọi nhánh ở **ngữ cảnh giá trị** cũng phải trap
+                // `VS0501` — cùng interp (`eval_match`) và nhánh câu lệnh (`cau.rs`). Trước đây
+                // đường này đẩy `false` im lặng ⇒ VM exit 0 trong khi interp exit 101.
+                // `keep_value = true`: verifier vẫn thấy một giá trị như mỗi nhánh khác.
+                self.trap_no_arm(*span, true)?;
                 let end = self.f.here();
                 for j in jend {
                     self.f.patch(j, end);
