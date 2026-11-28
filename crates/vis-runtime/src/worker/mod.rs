@@ -15,10 +15,17 @@
 //! `SendValue` là dạng Sendable của dữ liệu (không có `Rc`/`RefCell`). Đây là mô hình worker
 //! thật nhưng chưa nối vào evaluator ViScript (W1 hook).
 
+//! **ST-323a**: tách `pool` thành `board` (bảng completion/wait) + `ctx` (ngữ cảnh task),
+//! giữ nguyên bề mặt API công khai `vis_runtime::worker::*` qua barrel này.
+
+mod board;
+mod ctx;
 mod orchestrate;
 mod pool;
 mod proto;
 
+pub use board::*;
+pub use ctx::*;
 pub use orchestrate::*;
 pub use pool::*;
 pub use proto::*;
