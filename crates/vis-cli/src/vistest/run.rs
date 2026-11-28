@@ -28,7 +28,8 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut json_ra = false;
     // **VD-270**: `--json-out <path>` — ghi cùng object JSON ra tệp, stdout vẫn TAP nếu không `--json`.
     let mut json_out: Option<String> = None;
-    // **ST-105**: `--timeout <ms>` (≥50) chỉ áp cho **`test fn`**; mặc định **không** giới hạn.
+    // **ST-105 / VD-270**: `--timeout <ms>` (≥50) áp cho **cả `test fn` lẫn fixture `.out/.err`**
+    // (xem `chay_mot_lan`); mặc định **không** giới hạn. **ST-324a (#88)**: quá hạn kill cả cây con.
     let mut timeout_han: Option<u64> = None;
     // **VD-267**: `--filter <substr>` — lọc **trước khi chạy**; `None` = chạy tất cả.
     let mut loc: Option<String> = None;

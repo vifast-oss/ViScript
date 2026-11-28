@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! **ST-318e (VD-297)** — chạy tiến trình con cho `vis test`: PATH trợ giúp, hạn `--timeout`,
 //! gom stdout/stderr nền. Tách nguyên văn khỏi `vistest.rs` (0 đổi hành vi).
+//! **ST-324a (#88)**: quá hạn kill **cả cây** (nhóm tiến trình Unix / `taskkill /T` Windows).
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 /// **ST-230 (nối VD-winport)**: PATH cho tiến trình con của `vis test`, có **thư mục của binary
 /// `vis`** ở đầu. Fixture `.vish` gọi trợ giúp `test-child` đặt **cạnh** `vis` (cùng cách hai
@@ -104,8 +105,9 @@ pub(super) fn chan_doan(stderr: &str) -> Option<(String, u32, u32, String)> {
     None
 }
 
-/// Sau khi con đã thoát/bị kill, chờ hai luồng đọc ống **tối đa** chừng này. Cháu (nợ #88) có thể
-/// còn giữ đầu ghi ⇒ không bao giờ có EOF; hết hạn thì bỏ phần output chưa về, **không** chờ.
+/// Sau khi con đã thoát/bị kill, chờ hai luồng đọc ống **tối đa** chừng này. **ST-324a (#88)** đã
+/// kill cả cây cháu ⇒ đầu ghi ống đóng ngay và output về đủ; hạn này chỉ là lớp an toàn cuối cùng
+/// (phòng tiến trình thoát nhóm) — hết hạn thì bỏ phần output chưa về, **không** chờ.
 const HAN_GOM_OUTPUT: std::time::Duration = std::time::Duration::from_millis(500);
 
 /// Một luồng đọc `ong` tới EOF rồi gửi `(la_stderr, byte)` về kênh. Luồng chạy **song song** với
@@ -123,17 +125,75 @@ fn doc_nen(
     });
 }
 
-/// **ST-105**: chạy tiến trình con với hạn `ms`; quá hạn ⇒ `kill` + `wait`, trả `(mã, stdout, stderr,
-/// quá_hạn)`. Poll `try_wait` mỗi 10 ms (không crate mới, không `unsafe`).
+/// **ST-324a (#88)**: trên Unix, đặt con vào **nhóm tiến trình riêng** (`pgid = pid` của con)
+/// trước khi `exec`. Mọi cháu sinh ra kế thừa nhóm ⇒ một lệnh `kill -TERM -<pgid>` dọn được cả cây
+/// đang giữ đầu ghi ống. Dùng API an toàn `CommandExt::process_group` (không crate mới, không
+/// `unsafe` — R2). Windows không cần: `taskkill /T` đi theo cây PID.
+#[cfg(unix)]
+fn dat_nhom_rieng(c: &mut Command) {
+    use std::os::unix::process::CommandExt;
+    c.process_group(0);
+}
+
+#[cfg(not(unix))]
+fn dat_nhom_rieng(_c: &mut Command) {}
+
+/// Gửi một tín hiệu tới **toàn bộ nhóm** `pgid` (con + cháu) qua `kill` builtin của `/bin/sh`.
+/// Không crate mới, không `unsafe`; `pgid` luôn là số lấy từ `Child::id()` nên không tiêm lệnh.
+#[cfg(unix)]
+fn giet_nhom(pgid: u32, tin_hieu: &str) {
+    let _ = Command::new("/bin/sh")
+        .arg("-c")
+        // dash/BSD `kill` builtin không nhận `--`; `kill -TERM -<pgid>` (âm = nhóm) là chuẩn POSIX.
+        .arg(format!("kill -{tin_hieu} -{pgid}"))
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+}
+
+/// Windows: `taskkill /T /F /PID` kill con **và toàn bộ hậu duệ** trong một lệnh.
+#[cfg(windows)]
+fn giet_cay_windows(pid: u32) {
+    let _ = Command::new("taskkill")
+        .args(["/T", "/F", "/PID", &pid.to_string()])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+}
+
+/// Quá hạn ⇒ kill con **lẫn hậu duệ**. Unix: `TERM` cả nhóm, chờ 50 ms để dọn rồi `KILL` cả nhóm
+/// (Bảo đảm không hậu duệ nào sống sau [`HAN_GOM_OUTPUT`]); Windows: `taskkill /T /F`.
+fn giet_cay(pid: u32) {
+    #[cfg(unix)]
+    {
+        giet_nhom(pid, "TERM");
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        giet_nhom(pid, "KILL");
+    }
+    #[cfg(windows)]
+    {
+        giet_cay_windows(pid);
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = pid;
+    }
+}
+
+/// **ST-105 / ST-324a (#88)**: chạy tiến trình con với hạn `ms`; quá hạn ⇒ kill **cả cây** + `wait`,
+/// trả `(mã, stdout, stderr, quá_hạn)`. Poll `try_wait` mỗi 10 ms (không crate mới, không `unsafe`).
 ///
 /// stdout **và** stderr được đọc bởi hai luồng nền **trong lúc** poll (chỉ một ống đầy là đủ
 /// deadlock); gom kết quả bằng `recv_timeout` có hạn [`HAN_GOM_OUTPUT`] ⇒ không bao giờ treo.
 pub(super) fn chay_co_han(c: &mut Command, ms: u64) -> (i32, String, String, bool) {
     // Cùng hợp đồng stdin với `Command::output` (đóng ngay) — thêm `--timeout` không đổi
     // cách fixture nhìn stdin.
-    c.stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped());
+    c.stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    dat_nhom_rieng(c);
     let mut child = match c.spawn() {
         Ok(x) => x,
         Err(e) => return (-1, String::new(), format!("không chạy được: {e}"), false),
@@ -146,7 +206,9 @@ pub(super) fn chay_co_han(c: &mut Command, ms: u64) -> (i32, String, String, boo
         match child.try_wait() {
             Ok(Some(s)) => break (s, false),
             Ok(None) if bat.elapsed() >= std::time::Duration::from_millis(ms) => {
-                let _ = child.kill();
+                let pid = child.id();
+                giet_cay(pid); // #88: con + cháu giữ đầu ghi ống
+                let _ = child.kill(); // phòng nhóm đã mất leader / taskkill chưa kịp
                 match child.wait() {
                     Ok(s) => break (s, true),
                     Err(e) => return (-1, String::new(), format!("không chờ được con: {e}"), true),
