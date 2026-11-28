@@ -303,6 +303,8 @@
 | VD-305 | Chốt Sóng 9 (`ST-320a`/`ST-320b` `DONE`, gate 3940, 38 test), numbering nợ `#211`..`#215` theo R1, giữ `ST-316c` `BLOCKED` (chain exit=1) | đã chốt | 4263 |
 | VD-306 | Chốt Sóng 10 — 4 merge fix (`ST-321a..d` `DONE`, HEAD `0b32c5dc`, gate 3942, 40 test), đóng `#200`/`#201` (sổ 82/114), giữ `ST-316c` `BLOCKED` chờ re-run full-gate | đã chốt | 4274 |
 | VD-307 | Chốt bằng chứng 3-OS (`ps` gate 3942 + `psvn` peak3 + `mps` peak4), mở `ST-316c` `DONE` (sổ giữ 215 = 82/114; `ST-309` vẫn BLOCKED; không tag) | đã chốt | 4284 |
+| VD-308 | Chốt Sóng 12 (`ST-323a/b/d/c` `DONE`, HEAD `358621ef`, gate 3948/4 skip, audit 6/6), đóng `#213`/`#214`/`#215` (sổ 79/117), không tag, `ST-309` BLOCKED | đã chốt | 4302 |
+| VD-309 | Mở Sóng 13 (`ST-324a/b/c/d` `READY`: `#88` timeout process-group, rustdoc `vis-http`, R1 `fmt.rs`, repro-first `#1`) | đã chốt | 4315 |
 
 ## Ghi chú
 
@@ -310,5 +312,3 @@
 - Nhiều mục cùng số (đặc biệt `VD-270`, `VD-271`) là **bổ sung/đính chính** cùng một quyết định;
   index giữ tiêu đề mục đầu và ghi số mục bổ sung trong cột trạng thái.
 - Khoảng trống `VD-230`..`VD-240` không xuất hiện trong `DECISIONS.md`; không tự sinh nội dung.
-| VD-308 | Chốt Sóng 12 (ST-323a/b/c/d) — A0, 2026-11-28 · 4284+ |
-| VD-309 | Mở Sóng 13 (ST-324a/b/c/d) — A0, 2026-11-28 · 4284+ |
