@@ -4308,3 +4308,14 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 2. **Sổ nợ**: `#213`/`#214`/`#215` `mở → đóng`; §8 `215 = 79 mở / 117 đóng / 16 VS3 / 2 không làm / 1 điều hướng` (`82−3=79`, `114+3=117`). Không cấp số mới; gap `#205` giữ nguyên; VD-307 giữ nguyên văn (VD-142).
 3. **Bất biến**: chế độ `VD-289` phát triển kiến trúc — không soak 4h/24h, không fuzz 8h, không lặp 3× full gate; **`ST-309` vẫn BLOCKED**, **không tag** `v0.6.0`/`v1.0.0-rc1`, không tuyên bố phát hành.
 4. **Đồng bộ docs-only**: `QUEUE.md` (4 hàng ST-323 DONE), `SO-NO.md` (3 nợ đóng + dòng Cập nhật mới), `ACTIVE.md`/`STATE.md`/`ROADMAP.md` (HEAD `358621ef`, gate **3948**, R1 872/645/52, R8 39/40, sổ 79/117), `DECISIONS-INDEX.md` thêm dòng VD-308. Commit `[ST-00]` tách riêng khỏi merge (VD-279).
+
+
+### VD-309 · Mở Sóng 13 (4 lát `ST-324a/b/c/d`) — A0, 2026-11-28
+
+> Căn cứ: VD-308 chốt Sóng 12 (`cde4a616`), gate sạch 3948/3948, diff `lech=0`, sổ 215 = 79/117. Chế độ VD-289 tiếp diễn, không soak/fuzz, không tag.
+
+1. **`ST-324a`** (W1) — đóng `#88`: `--timeout` kill cây cháu (Unix process group, Windows `taskkill /T`), lane `vis-cli/src/vistest/tien_trinh.rs` + aggregator `cli_it` có sẵn; chạy riêng ≥20× không flake.
+2. **`ST-324b`** (W2) — sửa link rustdoc `[Scheduler]` hỏng tại `vis-http/src/async_http.rs:5`; KPI `RUSTDOCFLAGS="-D warnings" cargo doc -p vis-http --no-deps` exit 0; KHÔNG thêm dependency (DAG 5 tầng).
+3. **`ST-324c`** (W3) — R1 headroom `vis-cli/src/cli/fmt.rs` 974 → ≤900 theo mẫu `run_cmd/ho_tro.rs`; move nguyên văn, golden byte-identical; nếu helper dùng chung với `check`/`run_cmd` ⇒ DỪNG báo A0.
+4. **`ST-324d`** (W4) — repro-first `#1`: `let out = ls -l` qua `check` nhưng `run` báo chưa bind; nếu không tái lập ⇒ docs-only đóng; nếu sửa ⇒ lane `vis-syntax/src/**` + `vis-types/src/lower/khai.rs` (một ngu luật) + diff 100k.
+5. R8 cứng 39/40 (không tệp `.rs` cấp 1 mới), R1 cứng ≤1500; mỗi lát gate `--fast` + diff 100k nếu chạm compiler/runtime/VM; A0 chốt riêng commit `[ST-00]`; `ST-309` vẫn BLOCKED, không tag.
