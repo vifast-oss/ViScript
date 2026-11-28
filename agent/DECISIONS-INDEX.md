@@ -3,7 +3,7 @@
 
 > **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-310`, 2026-11-28). Không sửa nội dung `VD` ở đây;
 > nguồn sự thật vẫn là `agent/DECISIONS.md`. Mỗi `VD` một dòng: tiêu đề 1 dòng + trạng thái.
-> Có **299** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
+> Có **300** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
 
 | VD | Tiêu đề 1 dòng | Trạng thái | Dòng |
 |---|---|---|---:|
@@ -313,3 +313,4 @@
   index giữ tiêu đề mục đầu và ghi số mục bổ sung trong cột trạng thái.
 - Khoảng trống `VD-230`..`VD-240` không xuất hiện trong `DECISIONS.md`; không tự sinh nội dung.
 | VD-310 | Chốt Sóng 13 (ST-324a/b/c/d DONE, HEAD ba2d3e4f, gate 3949/3949), đóng #88/#1, sổ 77/119, caveat Windows | đã chốt | 4326 |
+| VD-311 | Mở Sóng 14 (ST-325a/b/c/d) — A0, 2026-11-28 · 4330+ |

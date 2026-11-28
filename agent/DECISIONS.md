@@ -4333,3 +4333,14 @@ Theo yêu cầu người điều hành: **không dùng GitHub Actions** (tránh 
 4. **Caveat**: phần **Windows `#88` chưa chạy thật** — cross-check `x86_64-pc-windows-msvc` lỗi thiếu `lib.exe` (`st324a-win-check.log` sha `4f683858…`, BLOCKED-ENV), `taskkill /T /F` chỉ review nguồn. **KHÔNG tuyên bố 3-OS/Windows xanh** cho lát này; đề xuất `psvn` smoke riêng.
 5. **Bất biến**: `VD-289` tiếp diễn — không soak/fuzz, không 3× full gate, **không tag** `v0.6.0`/`v1.0.0-rc1`, `ST-309` **BLOCKED**. `R39` report-check 37 báo cáo/396 hàng QUEUE tại HEAD này.
 6. **Đồng bộ (docs-only)**: `QUEUE` 4 hàng DONE, `SO-NO` 2 nợ đóng + §8 77/119, `ACTIVE`/`STATE`/`ROADMAP` HEAD `ba2d3e4f`/gate 3949/Sóng 13 4/4, `DECISIONS-INDEX`, journal `quyet-dinh-a0-2026-11-28-vd310.md`. Commit `[ST-00]` riêng (VD-279), 0 tệp `crates/`.
+
+
+### VD-311 · Mở Sóng 14 (`ST-325a/b/c/d`) — A0, 2026-11-28
+
+> Căn cứ: VD-310 chốt Sóng 13 (`f0a46151`), gate 3949/3949, sổ 215 = 77/119. VD-289 tiếp diễn, không soak/fuzz/tag.
+
+1. `ST-325a` (W1): R1 headroom `vis-runtime/src/stdlib.rs` 976 → tách theo miền dispatch, compile-time exhaustiveness giữ, API_STD 167; gate + diff 100k.
+2. `ST-325b` (W2): R1 headroom `vis-vm/src/vm_frame.rs` 958 → <900; churn cao, dừng nếu API đổi; gate + diff 100k.
+3. `ST-325c` (W3): đính chính chú thích `#145` trong `rt.rs` (`chan(0)` chặn ở đâu), doc-only, cargo doc -D warnings exit 0.
+4. `ST-325d` (W4): repro-first `#2` (`match` value context đẩy `false` vs `VS0501`), docs-only nếu không tái lập; nếu có thì sửa tối thiểu + diff 100k.
+5. R8 39/40 (không `.rs` cấp 1 mới), R1 cứng ≤1500; A0 chốt riêng `[ST-00]`; `ST-309` BLOCKED, không tag.
