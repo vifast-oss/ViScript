@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
 # DECISIONS-INDEX — chỉ mục quyết định `VD`
 
-> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-309`, 2026-11-28). Không sửa nội dung `VD` ở đây;
+> **Sinh tự động** từ `agent/DECISIONS.md` (ST-296d, cập nhật tới `VD-310`, 2026-11-28). Không sửa nội dung `VD` ở đây;
 > nguồn sự thật vẫn là `agent/DECISIONS.md`. Mỗi `VD` một dòng: tiêu đề 1 dòng + trạng thái.
-> Có **298** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
+> Có **299** mục định nghĩa; dải **VD-230..VD-240** không có mục định nghĩa riêng (một số số chỉ được nhắc trong văn bản, không bịa).
 
 | VD | Tiêu đề 1 dòng | Trạng thái | Dòng |
 |---|---|---|---:|
@@ -312,3 +312,4 @@
 - Nhiều mục cùng số (đặc biệt `VD-270`, `VD-271`) là **bổ sung/đính chính** cùng một quyết định;
   index giữ tiêu đề mục đầu và ghi số mục bổ sung trong cột trạng thái.
 - Khoảng trống `VD-230`..`VD-240` không xuất hiện trong `DECISIONS.md`; không tự sinh nội dung.
+| VD-310 | Chốt Sóng 13 (ST-324a/b/c/d DONE, HEAD ba2d3e4f, gate 3949/3949), đóng #88/#1, sổ 77/119, caveat Windows | đã chốt | 4326 |
