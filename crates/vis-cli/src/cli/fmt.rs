@@ -4,6 +4,9 @@
 use crate::*;
 use std::process::ExitCode;
 
+mod ho_tro;
+use ho_tro::{diff_dong, tep_json, xuat_fmt_diff, xuat_fmt_json};
+
 /// **ST-85**: đếm dòng lệch thụt lề của `.vish` theo chuẩn **4 × độ sâu khối**; `None` nếu tệp
 /// không parse được (tab cũng là lỗi lexer `VS0107`).
 fn dem_lech_thut_le(text: &str) -> Option<usize> {
@@ -90,128 +93,6 @@ fn usage_fmt() -> ExitCode {
         "  --stat: chỉ đi với --check (tệp/thư mục hoặc --stdin --check); in đúng một dòng stdout `fmt-check: <N> tệp, <M> cần sửa, <K> lỗi` (N tệp đã kiểm, M tệp cần sửa, K lỗi đọc/cú pháp), không in gì khác; lỗi chi tiết ra stderr; không đi với --json/--list/--diff/--write/--indent-report; thoát 0 (M=K=0) / 1 (M>0, K=0) / 2 (K>0 hoặc dùng sai)"
     );
     ExitCode::from(2)
-}
-
-/// **VD-270**: một tệp trong `vis fmt --check --json` — `path`, `formatted`, `error`.
-/// `None` ⇒ `"error":null`; `Some` ⇒ object lỗi với `code`/`line`/`col` **1-based**.
-fn tep_json(path: &str, formatted: bool, error: Option<(&str, u32, u32, &str)>) -> String {
-    let mut s = format!(
-        "{{\"path\":\"{}\",\"formatted\":{formatted},",
-        json_esc::esc(path)
-    );
-    match error {
-        None => s.push_str("\"error\":null}"),
-        Some((code, line, col, message)) => {
-            s.push_str("\"error\":{\"code\":\"");
-            s.push_str(&json_esc::esc(code));
-            s.push_str(&format!("\",\"line\":{line},\"col\":{col},\"message\":\""));
-            s.push_str(&json_esc::esc(message));
-            s.push_str("\"}}");
-        }
-    }
-    s
-}
-
-/// **VD-270**: unified diff **một hunk** (common prefix/suffix) cho `--check --diff`.
-/// Trả `None` nếu nội dung giống hệt; chỉ so theo dòng, không thêm timestamp.
-fn diff_dong(src: &str, moi: &str) -> Option<String> {
-    if src == moi {
-        return None;
-    }
-    let a: Vec<&str> = src.lines().collect();
-    let b: Vec<&str> = moi.lines().collect();
-    if a == b {
-        // Chỉ khác newline cuối: hunk thay toàn bộ dòng để không im lặng.
-        let mut s = format!("@@ -1,{} +1,{} @@\n", a.len(), b.len());
-        for l in &a {
-            s.push('-');
-            s.push_str(l);
-            s.push('\n');
-        }
-        for l in &b {
-            s.push('+');
-            s.push_str(l);
-            s.push('\n');
-        }
-        return Some(s);
-    }
-    let mut pre = 0usize;
-    while pre < a.len() && pre < b.len() && a[pre] == b[pre] {
-        pre += 1;
-    }
-    let mut suf = 0usize;
-    while suf < a.len() - pre && suf < b.len() - pre && a[a.len() - 1 - suf] == b[b.len() - 1 - suf]
-    {
-        suf += 1;
-    }
-    let old = &a[pre..a.len() - suf];
-    let new = &b[pre..b.len() - suf];
-    let start = pre + 1;
-    let mut s = format!("@@ -{start},{} +{start},{} @@\n", old.len(), new.len());
-    for l in old {
-        s.push('-');
-        s.push_str(l);
-        s.push('\n');
-    }
-    for l in new {
-        s.push('+');
-        s.push_str(l);
-        s.push('\n');
-    }
-    Some(s)
-}
-
-/// **VD-270**: `vis fmt --check --diff` — in unified diff cho từng tệp cần sửa.
-fn xuat_fmt_diff(ds: &[std::path::PathBuf]) -> ExitCode {
-    let mut ra = String::new();
-    let mut co_loi = false;
-    let mut can_sua = false;
-    for path in ds {
-        match doc_va_dinh_dang(path) {
-            KetQuaDoc::Xong { src, moi, .. } => {
-                if let Some(h) = diff_dong(&src, &moi) {
-                    can_sua = true;
-                    ra.push_str(&format!(
-                        "--- {}\n+++ {}\n{}",
-                        path.display(),
-                        path.display(),
-                        h
-                    ));
-                }
-            }
-            KetQuaDoc::ParseLoi(e) => {
-                co_loi = true;
-                eprintln!(
-                    "# {}: {}",
-                    path.display(),
-                    dong_chan_doan(e.code, e.line, e.col, &e.message)
-                );
-            }
-            KetQuaDoc::DocLoi(e) => {
-                co_loi = true;
-                eprintln!("# {}: không đọc được: {e}", path.display());
-            }
-        }
-    }
-    if !xuat_stdout(&ra) {
-        return ExitCode::from(2);
-    }
-    ExitCode::from(if co_loi {
-        2
-    } else if can_sua {
-        1
-    } else {
-        0
-    })
-}
-
-/// **VD-270**: in **một** object JSON nén trên stdout rồi trả mã thoát đã chọn (0/1/2).
-fn xuat_fmt_json(entries: &[String], ok: bool, ma_thoat: u8) -> ExitCode {
-    let body = format!("{{\"ok\":{ok},\"files\":[{}]}}\n", entries.join(","));
-    if !xuat_stdout(&body) {
-        return ExitCode::from(2);
-    }
-    ExitCode::from(ma_thoat)
 }
 
 /// **VD-269**: giá trị hợp lệ của `--mode` — đúng hai chế độ parser; `None` nếu lạ.
