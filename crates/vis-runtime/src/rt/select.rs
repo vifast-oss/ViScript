@@ -13,7 +13,7 @@
 //! - mỗi lần chọn chỉ **một** kênh thắng: `claim` chung `Rc<RefCell<Option<usize>>>` được kiểm
 //!   bởi mọi thao tác kênh trước khi nhận/giao — nhánh thua không nhận giá trị lần hai;
 //! - mọi waiter của frame (`Wait::Chan`) và timer của select được gỡ **đúng một lần** ở
-//!   [`don_dep`]/[`huy_frame`]; double-wake bị chặn bởi `frame_wake_one` + log `duplicate`.
+//!   `don_dep_kenh`/`huy_frame`; double-wake bị chặn bởi `frame_wake_one` + log `duplicate`.
 //! - `select_send` đăng ký `ChanSend { select: true }` trên các kênh chưa sẵn sàng; receiver
 //!   lấy đúng một entry (claim), các entry còn lại được dọn.
 //!
