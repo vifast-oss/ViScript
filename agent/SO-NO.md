@@ -85,7 +85,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 
 | Số | Mô tả | Nguồn | Trạng thái |
 |---|---|---|---|
-| 1 | Shell-let chưa hạ: `let out = ls -l` qua `check` nhưng `run` báo `out` chưa bind. | R11 §5 + R12 §5 | mở |
+| 1 | Shell-let chưa hạ: `let out = ls -l` qua `check` nhưng `run` báo `out` chưa bind. | R11 §5 + R12 §5 | **đóng ở ST-324d** (`VD-310`, triệu chứng hết hạn; `check` 0/`run` 0 khi không dùng `out`, dùng `out` ⇒ cả 2 `VS0301 (VD-260)` byte-bằng; KHÔNG tuyên bố shell-let đã bind)
 | 2 | `match` không khớp ở ngữ cảnh giá trị vẫn đẩy `false` thay vì `VS0501` — nghi lệch interp ↔ VM, chưa dựng được ca tối thiểu. | R11 §5 + R12 §5 | mở |
 | 3 | Gán lồng sâu hơn một tầng trường (`x.f[i][j]`) là `VS0412` có chủ đích. | R11 §5 + R12 §5 | mở |
 | 4 | Thân `impl` chưa tyck đầy đủ — mới kiểm đích gán. | R11 §5 + R12 §5 | mở |
@@ -172,7 +172,7 @@ Báo cáo **không** có dòng nợ đánh số: `R1` (chưa có sổ nợ đán
 | 85 | Chunk trailer bị bỏ qua: dừng ở chunk `0`, không đọc/không kiểm trailer. | R18 §5 | mở |
 | 86 | `Location` tương đối chưa resolve `..`/query-only: chỉ ghép thư mục hiện tại; `../x`/`?q` chưa chuẩn. (ST-109: `Location` đủ `..`/query-only/fragment) | R18 §5 · R19 §6 (ST-109) | đóng ở ST-109 |
 | 87 | `--timeout` chỉ `test fn`: fixture `.out/.err` không có timeout; không timeout theo ca/bộ | R18 §5 | mở |
-| 88 | `--timeout` không kill cây cháu: chỉ kill `vis run`; cháu (nếu có) có thể sống. | R18 §5 | mở |
+| 88 | `--timeout` không kill cây cháu: chỉ kill `vis run`; cháu (nếu có) có thể sống. | R18 §5 | **đóng ở ST-324a** (`VD-310`; kill cây cháu pgid Unix/`taskkill /T /F` Windows — **phần Windows chỉ review nguồn**, `lib.exe` thiếu/BLOCKED-ENV, KHÔNG tuyên bố 3-OS cho phần Windows; 25/25 không flake)
 | 89 | Pipe stdout/stderr có thể nghẽn: `wait_with_output` sau khi con kết thúc; ca in quá buffer có thể treo. (ST-139: 3/3 unit + 7/7 tích hợp xanh) | R18 §5 · QUEUE ST-139 · PR #24 · `ef6489d1` · JOURNAL/st139-do-truoc.log | đóng ở ST-139 |
 | 90 | `lower.rs` 1482 vẫn max R1: ST-106 chỉ tách `cmd.rs`; muốn max ≤1200 phải tách `lower.rs`. (ST-108: `lower.rs` 1482→993) | R18 §5 · R19 §6 (ST-108) | đóng ở ST-108 |
 | 91 | `ha_stage` 782 vẫn lớn: chưa tách tiếp; `cmd.rs` còn 1060. | R18 §5 | mở |
