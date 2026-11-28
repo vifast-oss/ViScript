@@ -54,19 +54,44 @@ fn stderr_nhieu_khong_bi_qua_han_oan() {
     assert!(t0.elapsed().as_millis() < 3_000);
 }
 
-/// Quá hạn **không bao giờ treo**: con bị kill nhưng **cháu** (`sleep 5`, nợ #88 chưa kill
-/// cây cháu) còn giữ đầu ghi stdout/stderr ⇒ vẫn phải trả `quá hạn` trong < 3 s.
+/// **ST-324a (#88)**: quá hạn kill **cả cây** — cháu `sleep 5` giữ đầu ghi stdout/stderr phải
+/// chết cùng con, output không bị cụt, và hàm vẫn trả `quá hạn` trong < 3 s.
 #[cfg(unix)]
 #[test]
 fn chau_giu_ong_khong_lam_treo() {
+    let pid_file = std::env::temp_dir().join(format!("vis-st324a-chau-{}.pid", std::process::id()));
+    let _ = std::fs::remove_file(&pid_file);
+    let lenh = format!(
+        "sleep 5 & echo $! > {}; echo ROOT-OK; sleep 10",
+        pid_file.display()
+    );
     let t0 = std::time::Instant::now();
-    let (_ma, _out, _err, qua_han) = chay_co_han(&mut sh("sleep 5 & sleep 10"), 300);
+    let (_ma, out, _err, qua_han) = chay_co_han(&mut sh(&lenh), 300);
     let dt = t0.elapsed();
     assert!(qua_han);
     assert!(
         dt.as_millis() < 3_000,
         "{dt:?} ≥ 3 s ⇒ đang chờ cháu đóng ống"
     );
+    assert!(
+        out.contains("ROOT-OK"),
+        "output bị cụt do cháu giữ ống: {out:?}"
+    );
+
+    let pid: u32 = std::fs::read_to_string(&pid_file)
+        .expect("cháu phải kịp ghi pid")
+        .trim()
+        .parse()
+        .expect("pid cháu phải là số");
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    let con_song = Command::new("/bin/sh")
+        .arg("-c")
+        .arg(format!("kill -0 {pid} 2>/dev/null"))
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+    assert!(!con_song, "cháu {pid} vẫn sống sau 500 ms (#88 chưa đóng)");
+    let _ = std::fs::remove_file(&pid_file);
 }
 
 /// **VD-270**: `--slowest` in `<ms> ms` khi ≥ 1 ms, `<us> us` khi dưới 1 ms (cắt xuống).

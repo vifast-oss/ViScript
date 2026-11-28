@@ -18,6 +18,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
+#[cfg(unix)]
+use std::time::Instant;
 
 fn tam(tag: &str) -> PathBuf {
     static DEM: AtomicUsize = AtomicUsize::new(0);
@@ -434,6 +436,91 @@ fn jobs_sai_exit_2() {
         assert_eq!(c, 2, "{args:?}: {e}");
         assert!(e.contains("--jobs"), "{args:?}: {e}");
     }
+
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// **ST-324a (#88)** — fixture sinh **tiến trình cháu giữ đầu ghi ống**: `vis run` bị `--timeout`
+/// giết nhưng `sleep 30` (cháu) phải chết theo, nếu không `vis test` treo / cụt output / rò tiến
+/// trình. Chỉ Unix (`/bin/sh`, `kill`, `chmod`); nhánh Windows dùng `taskkill /T` trong source,
+/// không có công cụ tương đương trong fixture tích hợp này.
+#[cfg(unix)]
+#[test]
+fn timeout_giet_cay_chau_giu_ong() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let d = tam("giet-cay");
+    let pid_file = d.join("grandchild.pid");
+    let script = d.join("hold.sh");
+    std::fs::write(
+        &script,
+        format!(
+            "#!/bin/sh\nsleep 30 & echo $! > {}\necho HOLD-READY\nwait\n",
+            pid_file.display()
+        ),
+    )
+    .expect("ghi script");
+    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755))
+        .expect("chmod script");
+    ghi(
+        &d,
+        "treo.vish",
+        &format!(
+            "# SPDX-License-Identifier: MIT OR Apache-2.0\n{}\n",
+            script.display()
+        ),
+    );
+    ghi(&d, "xanh.vis", "print(7)\n");
+    ghi_out(&d, "xanh.out", "7\n");
+    let ds = d.to_str().expect("đường dẫn tạm UTF-8");
+
+    let t0 = Instant::now();
+    let (c, o, e) = vis(&["test", "--timeout", "300", ds]);
+    let dt = t0.elapsed();
+    assert_eq!(c, 1, "phải exit 1: {o} {e}");
+    assert!(dt.as_millis() < 3_000, "phải trả nhanh, không treo: {dt:?}");
+    // Byte-shape TAP giữ nguyên: plan, dòng `not ok`, thông điệp `quá hạn`, ca kế vẫn chạy.
+    assert_eq!(
+        o,
+        "TAP version 13\n1..2\nnot ok 1 - treo.vish\n# treo.vish: quá hạn 300 ms\nok 2 - xanh.vis\n",
+        "TAP đổi byte: {o:?}"
+    );
+    kiem_tap(&o);
+
+    // Hậu duệ phải chết trong vòng 500 ms sau khi `vis test` trả.
+    let pid: u32 = std::fs::read_to_string(&pid_file)
+        .expect("cháu phải kịp ghi pid")
+        .trim()
+        .parse()
+        .expect("pid cháu là số");
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    let con_song = |p: u32| {
+        Command::new("/bin/sh")
+            .arg("-c")
+            .arg(format!("kill -0 {p} 2>/dev/null"))
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    };
+    assert!(!con_song(pid), "cháu {pid} vẫn sống sau 500 ms (#88)");
+
+    // Byte-shape JSON giữ nguyên, và lần chạy JSON cũng dọn sạch cháu của chính nó.
+    let (cj, oj, ej) = vis(&["test", "--timeout", "300", "--json", ds]);
+    assert_eq!(cj, 1, "{oj} {ej}");
+    assert_eq!(
+        oj,
+        "{\"total\":2,\"ok\":1,\"failed\":1,\"cases\":[{\"name\":\"treo.vish\",\"ok\":false,\"message\":\"quá hạn 300 ms\"},{\"name\":\"xanh.vis\",\"ok\":true,\"message\":\"\"}]}\n",
+        "JSON đổi byte: {oj:?}"
+    );
+    let pid2: u32 = std::fs::read_to_string(&pid_file)
+        .expect("cháu lần JSON phải kịp ghi pid")
+        .trim()
+        .parse()
+        .expect("pid cháu là số");
+    assert!(
+        !con_song(pid2),
+        "cháu {pid2} (lần JSON) vẫn sống sau 500 ms"
+    );
 
     let _ = std::fs::remove_dir_all(&d);
 }
