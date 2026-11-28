@@ -106,3 +106,50 @@ fn main_hai_int_bi_tu_choi() {
     kiem_run(&d, &p, &["VS0412", "VS0401"]);
     let _ = std::fs::remove_dir_all(&d);
 }
+
+/// **ST-323d (`#214`) ca 1** — closure gọi hàm tên có default param: tham số phải được ghi
+/// và khôi phục sạch, hai engine cùng in `3`, cùng exit 0. Không rò ra env module.
+#[test]
+fn st323d_closure_goi_ham_ten_default() {
+    let d = tam("closure-default");
+    let p = viet(
+        &d,
+        "d",
+        "fn h(--n: int = 3) -> int:\n    n\n\nfn main():\n    let f = fn() -> int: h()\n    print(f())\n",
+    );
+    let i = chay(&d, &["run", &p]);
+    let v = chay(&d, &["run", "--vm", "--no-cache", &p]);
+    assert_eq!(i.0, 0, "interp phải exit 0: {i:?}");
+    assert_eq!(v.0, 0, "vm phải exit 0: {v:?}");
+    assert_eq!(i.1, b"3\n", "interp stdout: {i:?}");
+    assert_eq!(i.1, v.1, "interp ↔ VM lệch stdout: {i:?}\nvm {v:?}");
+    assert_eq!(i.2, v.2, "interp ↔ VM lệch stderr: {i:?}\nvm {v:?}");
+    let _ = std::fs::remove_dir_all(&d);
+}
+
+/// **ST-323d (`#214`) ca 2** — default `1 / 0` trap **trước** vòng restore của hàm tên gọi
+/// qua closure: hai engine cùng exit 101, stdout rỗng, cùng `VS0502`. Phần chứng minh env
+/// module sạch sau trap/Ret nằm ở unit test `vis-interp/src/interp/goi_ham.rs` (R8: không tệp
+/// test cấp 1 mới).
+#[test]
+fn st323d_closure_goi_ham_ten_trap_som() {
+    let d = tam("closure-trap");
+    let p = viet(
+        &d,
+        "t",
+        "fn h(a: int, --n: float = 1 / 0) -> float:\n    1.0\n\nfn main() -> float:\n    let f = fn() -> float: h(7)\n    f()\n",
+    );
+    let i = chay(&d, &["run", &p]);
+    let v = chay(&d, &["run", "--vm", "--no-cache", &p]);
+    assert_eq!(i.0, 101, "interp phải exit 101 (trap): {i:?}");
+    assert_eq!(v.0, 101, "vm phải exit 101 (trap): {v:?}");
+    assert!(i.1.is_empty(), "interp stdout phải rỗng: {i:?}");
+    assert_eq!(i.1, v.1, "interp ↔ VM lệch stdout: {i:?}\nvm {v:?}");
+    assert!(
+        i.2.contains("VS0502"),
+        "interp stderr thiếu VS0502: {}",
+        i.2
+    );
+    assert_eq!(i.2, v.2, "interp ↔ VM lệch stderr: {i:?}\nvm {v:?}");
+    let _ = std::fs::remove_dir_all(&d);
+}

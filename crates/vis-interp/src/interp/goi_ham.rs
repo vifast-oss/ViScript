@@ -278,14 +278,19 @@ impl<'a> Interp<'a> {
         kq
     }
 
-    /// Thân [`Self::call_hfn_trong`] — chạy trên env **đã chọn** (env module, #210).
-    fn call_hfn_than(
+    /// **ST-323d (#214)** — ghi tham số vào env module, ghi giá trị cũ vào `old`.
+    ///
+    /// Tách riêng để vòng restore được gọi **ngay cả khi** `self.eval(d)?` (default) hoặc
+    /// nhánh "thiếu đối số" trả `Err` giữa chừng — trước bản vá các nhánh đó nhảy thẳng qua
+    /// vòng restore của [`Self::call_hfn_than`] và để tham số lọt lại env module.
+    fn gan_tham_so(
         &mut self,
         f: &'a HFn,
-        pos: Vec<Value>,
-        named: Vec<(String, Value)>,
+        pos: &[Value],
+        named: &[(String, Value)],
         span: Span,
-    ) -> R<Value> {
+        old: &mut Vec<(u32, Option<Value>)>,
+    ) -> R<()> {
         // ST-27: hàm có `...rest` nhận **thêm** đối số vị trí.
         let bien_di = f.params.last().map(|p| p.variadic).unwrap_or(false);
         if !bien_di && pos.len() + named.len() > f.params.len() {
@@ -300,7 +305,6 @@ impl<'a> Interp<'a> {
                 span,
             )));
         }
-        let mut old = Vec::with_capacity(f.params.len());
         for (i, p) in f.params.iter().enumerate() {
             old.push((p.sym, self.env.borrow().get(&p.sym).cloned()));
             // ST-27: `...rest` gom **mọi** đối số vị trí còn lại thành `list[str]`.
@@ -340,17 +344,41 @@ impl<'a> Interp<'a> {
                 self.mutable.insert(p.sym);
             }
         }
-        let r = self.exec_body(&f.body);
+        Ok(())
+    }
+
+    /// **ST-323d (#214)** — đưa env module về trạng thái trước lời gọi (ô nào cũ thì khôi
+    /// phục, ô nào chưa có thì xoá). Gọi ở **mọi** nhánh thoát của `call_hfn_than`.
+    fn khoi_phuc_tham_so(&mut self, old: &[(u32, Option<Value>)]) {
         for (p, v) in old {
             match v {
                 Some(v) => {
-                    self.env.borrow_mut().insert(p, v);
+                    self.env.borrow_mut().insert(*p, v.clone());
                 }
                 None => {
-                    self.env.borrow_mut().remove(&p);
+                    self.env.borrow_mut().remove(p);
                 }
             }
         }
+    }
+
+    /// Thân [`Self::call_hfn_trong`] — chạy trên env **đã chọn** (env module, #210).
+    fn call_hfn_than(
+        &mut self,
+        f: &'a HFn,
+        pos: Vec<Value>,
+        named: Vec<(String, Value)>,
+        span: Span,
+    ) -> R<Value> {
+        let mut old = Vec::with_capacity(f.params.len());
+        // **ST-323d (#214)**: chỉ restore **trước** thân khi setup lỗi (default trap/Ret,
+        // thiếu đối số, arity). Nếu setup Ok thì thân hàm cần tham số — restore sau `exec_body`.
+        if let Err(e) = self.gan_tham_so(f, &pos, &named, span, &mut old) {
+            self.khoi_phuc_tham_so(&old);
+            return Err(e);
+        }
+        let r = self.exec_body(&f.body);
+        self.khoi_phuc_tham_so(&old);
         match r {
             Ok(v) => match &f.ret {
                 Type::Opt(_) => Ok(opt_lift_maybe(v, opt_depth_ty(&f.ret))),
@@ -382,4 +410,71 @@ pub(crate) fn loi_arity(ten: &str, can: usize, got: usize, span: Span) -> Trap {
 /// **ST-317b** — thông điệp "không phải hàm" **một nguồn** cho interp + frame evaluator.
 pub(crate) fn loi_khong_phai_ham(v: &Value, span: Span) -> Trap {
     Trap::new(RT, format!("`{}` không phải hàm", v.show()), span)
+}
+
+#[cfg(test)]
+mod tests_st323d {
+    use super::*;
+
+    fn ha(src: &str) -> vis_types::HirOutput {
+        let src = format!("# SPDX-License-Identifier: MIT OR Apache-2.0\n{src}");
+        let lex = vis_syntax::lex(&src, vis_syntax::Mode::Script);
+        let out = vis_syntax::parse(&src, vis_syntax::Mode::Script);
+        vis_types::lower(&out.cst, &lex)
+    }
+
+    /// `sym` của tham số đầu (`a`) của hàm tên `h` — ô bị rò nếu restore bị bỏ qua.
+    fn sym_a(h: &vis_types::HirOutput) -> u32 {
+        h.hir
+            .items
+            .iter()
+            .find_map(|it| match it {
+                HItem::Fn(f) if f.name == "h" => {
+                    f.params.iter().find(|p| p.name == "a").map(|p| p.sym)
+                }
+                _ => None,
+            })
+            .expect("hàm h(a, …)")
+    }
+
+    fn co_o(it: &Interp<'_>, sym: u32) -> bool {
+        it.env.borrow().contains_key(&sym)
+    }
+
+    /// **#214 / trap sớm**: default `1 / 0` ⇒ `Abort::Trap` ngay trong vòng gán tham số,
+    /// trước vòng restore. Tham số đã ghi (`a=7`) không được lọt lại env module.
+    #[test]
+    fn st323d_khong_ro_tham_so_khi_trap_default() {
+        let h = ha("fn h(a: int, --n: float = 1 / 0) -> float:\n    1.0\n\nfn main() -> float:\n    h(7)\n");
+        let a = sym_a(&h);
+        let mut it = Interp::new(&h.hir, &h.symbols, &h.types);
+        assert!(!co_o(&it, a), "trước chạy: ô tham số chưa có");
+        assert!(
+            matches!(it.run_program(&[]), Err(Abort::Trap(_))),
+            "default `1 / 0` phải trap VS0502"
+        );
+        assert!(
+            !co_o(&it, a),
+            "#214: ô `a` của h vẫn còn trong env module sau trap sớm"
+        );
+    }
+
+    /// **#214 / `Ret` sớm**: `None?` trong default ⇒ `Abort::Ret(None)` thoát hàm tên trước
+    /// vòng restore; closure bắt `Ret` và trả `None` như thường, nhưng env module phải sạch.
+    #[test]
+    fn st323d_khong_ro_tham_so_khi_ret_default() {
+        let h = ha("fn boom() -> int?:\n    None\n\nfn h(a: int, --n: int = boom()?) -> int:\n    a\n\nfn main():\n    let f = fn() -> int: h(7)\n    print(f())\n");
+        let a = sym_a(&h);
+        let mut it = Interp::new(&h.hir, &h.symbols, &h.types);
+        assert!(!co_o(&it, a), "trước chạy: ô tham số chưa có");
+        assert!(
+            it.run_program(&[]).is_ok(),
+            "`?` trong default trả sớm `None`, không trap"
+        );
+        assert_eq!(it.take_stdout(), "None\n");
+        assert!(
+            !co_o(&it, a),
+            "#214: ô `a` của h vẫn còn trong env module sau `Ret` sớm"
+        );
+    }
 }
