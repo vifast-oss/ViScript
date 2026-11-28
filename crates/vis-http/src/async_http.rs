@@ -2,10 +2,10 @@
 //! **VS3-1d/W1f-HTTP** — `http.get/head` **hợp tác** trên frame scheduler.
 //!
 //! Mỗi lời gọi là một state machine lưu theo `frame.current`; mỗi bước I/O đi qua
-//! [`Scheduler::frame_reactor_poll_io`]/[`Scheduler::frame_reactor_poll_bytes`] nên khi kernel
-//! chưa sẵn sàng thì frame trả `Abort::Pending` và scheduler chạy tác vụ khác. Không gọi
-//! `NetHost::connect/read/write` blocking giữa request. TLS dùng handle `T:<addr>` do
-//! `AsyncNet` (CLI) cài; HTTP/1.1 trước, HTTP/2 async còn mở.
+//! `Scheduler::frame_reactor_poll_io`/`Scheduler::frame_reactor_poll_bytes` (tầng trên cài qua
+//! [`FrameReactorBackend`]) nên khi kernel chưa sẵn sàng thì frame trả `Abort::Pending` và
+//! scheduler chạy tác vụ khác. Không gọi `NetHost::connect/read/write` blocking giữa request.
+//! TLS dùng handle `T:<addr>` do `AsyncNet` (CLI) cài; HTTP/1.1 trước, HTTP/2 async còn mở.
 //!
 //! Phần parser/redirect dùng **chung** helper của [`super`] với đường sync; chỉ khác nguồn byte
 //! (reactor thay vì host blocking). Lỗi mạng/HTTP vẫn là `Result.Err(Error)`; `cap[Net]` được
