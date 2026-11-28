@@ -1340,3 +1340,97 @@ fn main():
     assert_eq!(v.exit, 0, "VM exit");
     so_khop(&i, &v, "HOF callback hàm tên ghi global trong frame");
 }
+
+/// **w28 (ST-323c / #213, P2-2)** — **free HOF gọi callback hàm tên trong closure lambda ghi
+/// global**: `let h = tang` trong lambda `f()`; `where([1, 3], h)` chạy callback **non-frame**
+/// (`Host::call` → `call_closure`, env module) ghi thẳng globals mà **không** đi qua
+/// `DongBo::ghi` ⇒ cache của **main frame** (clone của globals) giữ ô cũ. Oracle là VM/main
+/// frame: `[3]\n3\n0\n3\n` (`print(g)` trong lambda vẫn `0` theo by-value closure #206/#209).
+/// Repro gốc: `/home/ps/vislogs/review-manual-hof-frame2.vis` — interp `[3],3,0,0` vs VM
+/// `[3],3,0,3`. Đỏ trước vá ST-323c.
+#[test]
+fn w28_frame_w1_free_hof_ghi_global_trong_closure() {
+    const SRC: &str = r#"var g = 0
+
+async fn dummy() -> int:
+    1
+
+fn doc() -> int:
+    g
+
+fn tang(x: int) -> bool:
+    g = x
+    x > 2
+
+fn main():
+    let t = spawn dummy()
+    await t
+    let f = fn():
+        let h = tang
+        print(where([1, 3], h))
+        print(doc())
+        print(g)
+    f()
+    print(g)
+"#;
+    let a = anh(SRC);
+    let i = frame_1(SRC, &a);
+    let v = frame_vm_1(SRC, &a);
+    assert_eq!(i.stdout, "[3]\n3\n0\n3\n", "interp: {:?}", i.diagnostics);
+    assert_eq!(v.stdout, "[3]\n3\n0\n3\n", "VM: {:?}", v.diagnostics);
+    assert!(i.diagnostics.is_empty(), "interp: {:?}", i.diagnostics);
+    assert!(v.diagnostics.is_empty(), "VM: {:?}", v.diagnostics);
+    assert_eq!(i.exit, 0, "interp exit");
+    assert_eq!(v.exit, 0, "VM exit");
+    so_khop(&i, &v, "free HOF ghi global qua callback trong closure");
+}
+
+/// **w29 (ST-323c / #215, test gap W>1)** — task **chỉ đọc** global qua hàm tên lấy từ giá trị
+/// (`let h = doc`) và free HOF read-only (`where([1,2], than)`) trong closure; chạy W=2/4 để khoá
+/// parity hai engine trên đường W>1 (audit Sóng 9 chỉ kiểm tay: read-only không trap `VS0509`).
+/// Kỳ vọng literal `[1, 2]\n107\n7\n` cho **mỗi** engine, mỗi W.
+#[test]
+fn w29_frame_w2_w4_doc_only_hof_trong_closure() {
+    const SRC: &str = r#"var g = 7
+
+async fn doc_task() -> int:
+    let h = doc
+    print(where([1, 2], than))
+    100 + h()
+
+fn doc() -> int:
+    g
+
+fn than(x: int) -> bool:
+    g > x
+
+fn main():
+    let t = spawn doc_task()
+    print(await t)
+    print(g)
+"#;
+    let a = anh(SRC);
+    for w in [2, 4] {
+        let i = frame_w(SRC, &a, w);
+        let v = frame_vm_w(SRC, &a, w);
+        assert_eq!(
+            i.stdout, "[1, 2]\n107\n7\n",
+            "interp W={w}: {:?}",
+            i.diagnostics
+        );
+        assert_eq!(
+            v.stdout, "[1, 2]\n107\n7\n",
+            "VM W={w}: {:?}",
+            v.diagnostics
+        );
+        assert!(
+            i.diagnostics.is_empty(),
+            "interp W={w}: {:?}",
+            i.diagnostics
+        );
+        assert!(v.diagnostics.is_empty(), "VM W={w}: {:?}", v.diagnostics);
+        assert_eq!(i.exit, 0, "interp W={w} exit");
+        assert_eq!(v.exit, 0, "VM W={w} exit");
+        so_khop(&i, &v, "read-only hàm tên/HOF trong closure W>1");
+    }
+}

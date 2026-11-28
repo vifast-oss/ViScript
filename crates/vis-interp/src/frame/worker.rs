@@ -626,9 +626,13 @@ impl DongBo {
     /// nằm trong globals; việc cần làm là đánh dirty và bơm ngay vào các khung của frame hiện tại
     /// (cache clone) — khác với `ghi` (đọc giá trị từ khung rồi chép ngược ra globals).
     fn ghi_ngoai(&mut self, it: &Interp<'_>, frame: &mut IFrame<'_>, sym: u32, id: u32) {
-        if frame.cur().by_value {
-            return;
-        }
+        // **ST-323c (#213)**: KHÔNG bỏ qua ca `frame.cur().by_value`. Cơ chế ở
+        // `Interp::ghi_ngoai` chỉ nhả sổ khi `self.env` **chính là** env module — tức lệnh ghi
+        // đã đi thẳng vào globals (hàm tên gọi từ closure qua free HOF). Dù khung đang chạy là
+        // closure bắt giá trị (#206/#209), giá trị thật trong globals vẫn đổi, nên phải đánh
+        // `dirty` để main/task frame peer thấy. `nap_vao_env` ở dưới **vẫn lọc** khung
+        // `by_value` ⇒ snapshot closure không bị đè (VM cũng in `0` trong lambda); chỉ các
+        // khung thường của chính frame (kể cả khung gốc `main`) nhận giá trị mới.
         let globals = it.env.clone();
         if !globals.borrow().contains_key(&sym) {
             return;
